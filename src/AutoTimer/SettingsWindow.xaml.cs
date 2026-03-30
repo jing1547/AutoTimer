@@ -599,6 +599,7 @@ public partial class SettingsWindow : Window
 
         // 피커 밖 클릭 → 닫기
         ClosePicker();
+        e.Handled = true;
     }
 
     private void HookPickers(System.Windows.Controls.ItemsControl list)
@@ -662,6 +663,7 @@ public partial class SettingsWindow : Window
     private void OnOverlayClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         ClosePicker();
+        e.Handled = true;
     }
 
     private void ClosePicker()

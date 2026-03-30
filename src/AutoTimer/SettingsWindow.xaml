@@ -503,7 +503,7 @@
             <!-- 피커 오버레이 (클릭 시 닫기용 배경 + 피커 패널) -->
             <Grid x:Name="PickerOverlay" Grid.Row="1" Visibility="Collapsed">
                 <!-- 반투명 배경 — 클릭하면 피커 닫힘 -->
-                <Border Background="#80000000" MouseLeftButtonUp="OnOverlayClick"/>
+                <Border Background="#80000000" MouseLeftButtonDown="OnOverlayClick"/>
 
                 <!-- 시간 피커 -->
                 <Border x:Name="TimePickerPanel" Visibility="Collapsed"
