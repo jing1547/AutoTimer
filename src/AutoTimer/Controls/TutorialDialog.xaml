@@ -7,6 +7,69 @@
         Width="500" Height="520"
         FontFamily="pack://application:,,,/Assets/#NanumSquare Neo Regular"
         FontSize="14">
+
+    <Window.Resources>
+        <!-- 버튼 -->
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource BgPanelBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentDimBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="14,6"/>
+            <Setter Property="FontFamily" Value="pack://application:,,,/Assets/#NanumSquare Neo Regular"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BgHoverBrush}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentDimBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 스크롤바 -->
+        <Style TargetType="ScrollBar">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Width" Value="8"/>
+        </Style>
+        <Style x:Key="{x:Type ScrollViewer}" TargetType="ScrollViewer">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollViewer">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ScrollContentPresenter/>
+                            <ScrollBar Grid.Column="1" Name="PART_VerticalScrollBar"
+                                       Value="{TemplateBinding VerticalOffset}"
+                                       Maximum="{TemplateBinding ScrollableHeight}"
+                                       ViewportSize="{TemplateBinding ViewportHeight}"
+                                       Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"
+                                       Width="6" Margin="0,2,2,2" Opacity="0.4"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
     <Border CornerRadius="0"
             BorderBrush="{DynamicResource AccentDimBrush}" BorderThickness="1"
             Background="{DynamicResource BgPanelBrush}">
@@ -36,8 +99,7 @@
             <StackPanel Grid.Row="2" Orientation="Horizontal"
                         HorizontalAlignment="Center" Margin="16,4,16,16">
                 <Button x:Name="BtnClose" Content="OK" MinWidth="80"
-                        Padding="16,7" Cursor="Hand" FontSize="14"
-                        Click="OnClose"/>
+                        Padding="16,7" Click="OnClose"/>
             </StackPanel>
         </Grid>
     </Border>
