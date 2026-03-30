@@ -70,8 +70,8 @@ public partial class App : Application
             if (_activeVideo is not null)
                 return;
 
-            var (screen, _) = MonitorService.GetTargetScreenSafe();
-            if (screen.DeviceName == "NONE")
+            var (screen, isFallback) = MonitorService.GetTargetScreenSafe();
+            if (screen.DeviceName == "NONE" || isFallback)
                 return;
 
             var window = new VideoWindow(screen, isTestPlay: false);
@@ -121,9 +121,10 @@ public partial class App : Application
             {
                 var lang2 = SettingsManager.Current.General.Language;
                 var msg2 = lang2 == "ko"
-                    ? $"설정된 모니터가 연결되지 않아 주 모니터({screen.DeviceName})에서 재생합니다."
-                    : $"Target monitor disconnected. Playing on primary ({screen.DeviceName}).";
-                Controls.CustomDialog.ShowInfo(msg2);
+                    ? "설정된 모니터를 찾을 수 없습니다. 모니터 설정을 확인해주세요."
+                    : "Target monitor not found. Please check monitor settings.";
+                Controls.CustomDialog.ShowWarning(msg2);
+                return;
             }
 
             var window = new VideoWindow(screen, isTestPlay: true);
@@ -177,8 +178,8 @@ public partial class App : Application
         else
         {
             // 재생 중이 아님 — 새 창 열고 seek
-            var (screen, _) = MonitorService.GetTargetScreenSafe();
-            if (screen.DeviceName == "NONE") return;
+            var (screen, isFallback) = MonitorService.GetTargetScreenSafe();
+            if (screen.DeviceName == "NONE" || isFallback) return;
 
             var window = new VideoWindow(screen, isTestPlay: false);
             window.Closed += (_, _) => { if (_activeVideo == window) _activeVideo = null; };
