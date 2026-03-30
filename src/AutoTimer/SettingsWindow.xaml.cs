@@ -719,7 +719,7 @@ public partial class SettingsWindow : Window
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Foreground = (System.Windows.Media.SolidColorBrush)FindResource("FgDimBrush"),
                 FontFamily = new System.Windows.Media.FontFamily("pack://application:,,,/Assets/#NanumSquare Neo Regular"),
-                Width = 40, TextAlignment = TextAlignment.Center
+                Width = 48, TextAlignment = TextAlignment.Center
             });
         }
 
@@ -742,7 +742,7 @@ public partial class SettingsWindow : Window
                     Tag = dayNum,
                     FontSize = 15,
                     FontFamily = new System.Windows.Media.FontFamily("pack://application:,,,/Assets/#NanumSquare Neo Regular"),
-                    Width = 40, Height = 36,
+                    Width = 48, Height = 38,
                     Margin = new Thickness(1),
                     Cursor = System.Windows.Input.Cursors.Hand,
                     Background = isSelected ? (System.Windows.Media.SolidColorBrush)FindResource("AccentDimBrush")
@@ -759,7 +759,7 @@ public partial class SettingsWindow : Window
             }
             else
             {
-                DateDayGrid.Children.Add(new System.Windows.Controls.Border { Width = 40, Height = 36 });
+                DateDayGrid.Children.Add(new System.Windows.Controls.Border { Width = 48, Height = 38 });
             }
         }
     }
