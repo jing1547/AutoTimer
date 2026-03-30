@@ -752,7 +752,32 @@ public partial class SettingsWindow : Window
         => WindowState = WindowState.Minimized;
 
     private void OnCloseWindow(object sender, RoutedEventArgs e)
-        => Close();
+    {
+        if (IsDirty)
+        {
+            var title = "AutoTimer";
+            var msg = _lang == "ko"
+                ? "변경 사항이 저장되지 않았습니다.\n저장하고 닫으시겠습니까?"
+                : "Unsaved changes.\nSave before closing?";
+
+            var result = MessageBox.Show(msg, title, MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    SaveToSettings();
+                    _timeSync.RestartTimer();
+                }
+                catch { }
+            }
+            else if (result == MessageBoxResult.Cancel)
+            {
+                return;
+            }
+        }
+        Close();
+    }
 
     private void RestoreWindowSize()
     {
