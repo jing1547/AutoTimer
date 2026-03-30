@@ -320,6 +320,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="36"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <!-- 커스텀 타이틀바 -->
@@ -491,23 +492,25 @@
                     <Button x:Name="BtnAddOneTime" HorizontalAlignment="Right" Margin="0,6,0,0"
                             Click="OnAddOneTime" FontSize="14"/>
 
-                    <!-- 하단 -->
-                    <Border Background="{DynamicResource AccentDimBrush}" Height="1" Opacity="0.3" Margin="0,16,0,0"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0">
-                        <Button x:Name="BtnTestPlay" Padding="16,7" Click="OnTestPlay"/>
-                        <Button x:Name="BtnRefresh" Padding="16,7" Margin="10,0,0,0" Click="OnRefresh"/>
-                        <Button x:Name="BtnForceStop" Padding="16,7" Margin="10,0,0,0" Click="OnForceStop"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0">
-                        <Button x:Name="BtnSync" Padding="16,7" Click="OnSync"/>
-                        <Button x:Name="BtnSave" Padding="20,7" Margin="10,0,0,0" Click="OnSave" FontWeight="Bold"/>
-                    </StackPanel>
-
                 </StackPanel>
             </ScrollViewer>
 
+            <!-- 하단 고정 버튼 -->
+            <StackPanel Grid.Row="2" Margin="18,0,18,12">
+                <Border Background="{DynamicResource AccentDimBrush}" Height="1" Opacity="0.3" Margin="0,0,0,0"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                    <Button x:Name="BtnTestPlay" Padding="16,7" Click="OnTestPlay"/>
+                    <Button x:Name="BtnRefresh" Padding="16,7" Margin="10,0,0,0" Click="OnRefresh"/>
+                    <Button x:Name="BtnForceStop" Padding="16,7" Margin="10,0,0,0" Click="OnForceStop"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0">
+                    <Button x:Name="BtnSync" Padding="16,7" Click="OnSync"/>
+                    <Button x:Name="BtnSave" Padding="20,7" Margin="10,0,0,0" Click="OnSave" FontWeight="Bold"/>
+                </StackPanel>
+            </StackPanel>
+
             <!-- 피커 오버레이 (클릭 시 닫기용 배경 + 피커 패널) -->
-            <Grid x:Name="PickerOverlay" Grid.Row="1" Visibility="Collapsed">
+            <Grid x:Name="PickerOverlay" Grid.Row="1" Grid.RowSpan="2" Visibility="Collapsed">
                 <!-- 반투명 배경 — 클릭하면 피커 닫힘 -->
                 <Border Background="#80000000" MouseLeftButtonDown="OnOverlayClick"/>
 
