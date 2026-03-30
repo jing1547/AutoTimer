@@ -76,6 +76,10 @@ public static class NtpClient
         if (len < NtpPacketSize)
             return new NtpResult { Success = false, Error = "Invalid NTP response" };
 
+        // Bounds check: need 8 bytes from offset 32 and 40
+        if (received.Length < 48)
+            return new NtpResult { Success = false, Error = "NTP buffer too small" };
+
         // T2: 서버 수신 시각 (바이트 32-39)
         var t2 = ReadNtpTimestamp(received, 32);
         // T3: 서버 송신 시각 (바이트 40-47)

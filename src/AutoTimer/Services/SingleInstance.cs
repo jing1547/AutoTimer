@@ -12,6 +12,23 @@ public static class SingleInstance
         _mutex = new Mutex(true, MutexName, out bool createdNew);
         if (!createdNew)
         {
+            // Owning process may have crashed without releasing.
+            // Try to acquire with a short wait.
+            try
+            {
+                if (_mutex.WaitOne(500))
+                    return true; // Acquired abandoned mutex
+            }
+            catch (AbandonedMutexException)
+            {
+                // Previous owner crashed — we now own the mutex
+                return true;
+            }
+            catch
+            {
+                // Timeout or other error
+            }
+
             _mutex.Dispose();
             _mutex = null;
             return false;

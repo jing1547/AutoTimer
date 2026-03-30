@@ -144,6 +144,12 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        // If settings window is open and dirty, save before shutdown
+        if (_trayManager?.HasUnsavedSettings == true)
+        {
+            try { SettingsManager.Save(); } catch { }
+        }
+
         _scheduler?.Dispose();
         _timeSync?.Dispose();
         _trayManager?.Dispose();

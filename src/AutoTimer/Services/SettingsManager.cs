@@ -37,7 +37,15 @@ public static class SettingsManager
             try
             {
                 var json = File.ReadAllText(SettingsPath);
-                Current = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings();
+                var loaded = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings();
+                // Ensure all sub-objects are non-null after deserialization
+                loaded.General ??= new();
+                loaded.Display ??= new();
+                loaded.Playback ??= new();
+                loaded.Window ??= new();
+                loaded.Schedules ??= [];
+                loaded.OneTimeSchedules ??= [];
+                Current = loaded;
             }
             catch
             {
@@ -64,7 +72,16 @@ public static class SettingsManager
                 var tempPath = SettingsPath + ".tmp";
                 var json = JsonSerializer.Serialize(Current, JsonOptions);
                 File.WriteAllText(tempPath, json);
-                File.Move(tempPath, SettingsPath, true);
+                try
+                {
+                    File.Move(tempPath, SettingsPath, true);
+                }
+                catch
+                {
+                    // Move failed (e.g. disk full for rename) — try direct write as fallback
+                    try { File.WriteAllText(SettingsPath, json); } catch { }
+                    try { File.Delete(tempPath); } catch { }
+                }
             }
             catch
             {

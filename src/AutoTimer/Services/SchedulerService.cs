@@ -34,10 +34,18 @@ public sealed class SchedulerService : IDisposable
             var now = _timeSync.Now;
             var settings = SettingsManager.Current;
 
-            // 오래된 키 정리 (1분마다)
+            // 오래된 키 정리 (1분마다) — 오늘 이전 키 제거
             if ((now - _lastCleanup).TotalMinutes >= 1)
             {
-                _triggeredKeys.RemoveWhere(k => !k.EndsWith(now.ToString("HH:mm")));
+                var today = now.ToString("yyyy-MM-dd");
+                _triggeredKeys.RemoveWhere(k =>
+                {
+                    // key format: "{id}:{yyyy-MM-dd} {HH:mm}"
+                    var colonIdx = k.IndexOf(':');
+                    if (colonIdx < 0 || colonIdx + 1 >= k.Length) return true;
+                    var datepart = k.Substring(colonIdx + 1, Math.Min(10, k.Length - colonIdx - 1));
+                    return string.Compare(datepart, today, StringComparison.Ordinal) < 0;
+                });
                 _lastCleanup = now;
             }
 

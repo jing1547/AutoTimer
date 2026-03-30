@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using AutoTimer.Services;
 using LibVLCSharp.Shared;
 
@@ -17,6 +18,8 @@ public partial class VideoWindow : Window
     private readonly int _fadeOutMs;
     private MediaPlayer? _mediaPlayer;
     private bool _closing;
+    private DispatcherTimer? _watchdogTimer;
+    private DispatcherTimer? _monitorCheckTimer;
 
     public bool IsTestPlay { get; }
 
@@ -55,14 +58,53 @@ public partial class VideoWindow : Window
 
     public void Play(string videoPath)
     {
-        CleanupPlayer();
-        var libvlc = PreloadService.GetLibVLC();
-        _mediaPlayer = new MediaPlayer(libvlc);
-        _mediaPlayer.EndReached += OnEndReached;
-        VideoView.MediaPlayer = _mediaPlayer;
+        try
+        {
+            CleanupPlayer();
+            var libvlc = PreloadService.GetLibVLC();
+            _mediaPlayer = new MediaPlayer(libvlc);
+            _mediaPlayer.EndReached += OnEndReached;
+            VideoView.MediaPlayer = _mediaPlayer;
 
-        using var media = new Media(libvlc, new Uri(videoPath));
-        _mediaPlayer.Play(media);
+            using var media = new Media(libvlc, new Uri(videoPath));
+            _mediaPlayer.Play(media);
+
+            // Watchdog: if EndReached doesn't fire within a reasonable time, allow close
+            _watchdogTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(30) };
+            _watchdogTimer.Tick += (_, _) => { _watchdogTimer?.Stop(); CleanupAndClose(); };
+            _watchdogTimer.Start();
+
+            // Monitor disconnect detection
+            _monitorCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+            _monitorCheckTimer.Tick += OnMonitorCheck;
+            _monitorCheckTimer.Start();
+        }
+        catch
+        {
+            // Bad file or LibVLC error — close gracefully
+            CleanupAndClose();
+        }
+    }
+
+    private void OnMonitorCheck(object? sender, EventArgs e)
+    {
+        if (_closing) return;
+
+        // Check if window is off-screen (monitor disconnected)
+        var screens = MonitorService.GetScreens();
+        bool onScreen = false;
+        foreach (var s in screens)
+        {
+            if (Left >= s.Left && Left < s.Left + s.Width &&
+                Top >= s.Top && Top < s.Top + s.Height)
+            {
+                onScreen = true;
+                break;
+            }
+        }
+
+        if (!onScreen)
+            CleanupAndClose();
     }
 
     private void OnEndReached(object? sender, EventArgs e)
@@ -103,6 +145,8 @@ public partial class VideoWindow : Window
     {
         if (_closing) return;
         _closing = true;
+        _watchdogTimer?.Stop();
+        _monitorCheckTimer?.Stop();
         CleanupPlayer();
         Close();
     }
@@ -135,6 +179,8 @@ public partial class VideoWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _closing = true;
+        _watchdogTimer?.Stop();
+        _monitorCheckTimer?.Stop();
         CleanupPlayer();
         base.OnClosed(e);
     }
