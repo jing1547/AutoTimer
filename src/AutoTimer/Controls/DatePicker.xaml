@@ -1,0 +1,12 @@
+<UserControl x:Class="AutoTimer.Controls.DatePicker"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border x:Name="Display" Background="{DynamicResource BgInputBrush}"
+            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+            Padding="4,4" Cursor="Hand" MouseLeftButtonUp="OnDisplayClick">
+        <TextBlock x:Name="TxtDisplay" Foreground="{DynamicResource AccentBrush}"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   FontFamily="pack://application:,,,/Assets/#NanumSquare Neo Regular"
+                   FontSize="14"/>
+    </Border>
+</UserControl>
