@@ -14,8 +14,15 @@ public static class NtpClient
     private static readonly string[] Servers =
     [
         "time.bora.net",
+        "time2.kriss.re.kr",
+        "ntp.kornet.net",
         "time.google.com",
-        "pool.ntp.org"
+        "time.cloudflare.com",
+        "time.facebook.com",
+        "time.windows.com",
+        "time.apple.com",
+        "time.nist.gov",
+        "asia.pool.ntp.org"
     ];
 
     private const int NtpPort = 123;

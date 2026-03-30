@@ -351,11 +351,16 @@ public partial class SettingsWindow : Window
             {
                 TxtCurrentTime.Text = $"{now:yyyy-MM-dd  HH:mm:ss.ff}";
             }
+
+            // 현재 NTP 서버 정보를 서버 버튼 툴팁에 표시
+            var server = _timeSync.LastServer;
+            RbServer.ToolTip = string.IsNullOrEmpty(server) ? null : $"NTP: {server}";
         }
         else
         {
             now = DateTime.Now;
             TxtCurrentTime.Text = $"{now:yyyy-MM-dd  HH:mm:ss.ff}";
+            RbServer.ToolTip = null;
         }
     }
 
