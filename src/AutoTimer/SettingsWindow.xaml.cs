@@ -42,8 +42,6 @@ public partial class SettingsWindow : Window
 
             if ((ChkRunOnStartup.IsChecked == true) != s.General.RunOnStartup) return true;
             if ((RbServer.IsChecked == true ? "server" : "local") != s.General.TimeSource) return true;
-            if (_lang != s.General.Language) return true;
-            if (_theme != s.General.Theme) return true;
 
             var screens = GetCachedScreens();
             if (CmbMonitor.SelectedIndex >= 0 && CmbMonitor.SelectedIndex < screens.Count)
@@ -257,6 +255,9 @@ public partial class SettingsWindow : Window
         if (!_initialized) return;
         _lang = CmbLanguage.SelectedIndex == 0 ? "ko" : "en";
         ApplyLanguage(_lang);
+        // 언어는 설정창 표시 설정이므로 즉시 저장
+        SettingsManager.Current.General.Language = _lang;
+        SettingsManager.Save();
     }
 
     private void OnThemeChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -264,6 +265,9 @@ public partial class SettingsWindow : Window
         if (!_initialized) return;
         _theme = CmbTheme.SelectedIndex switch { 0 => "dark", 1 => "light", _ => "system" };
         ApplyTheme(_theme);
+        // 테마는 설정창 표시 설정이므로 즉시 저장
+        SettingsManager.Current.General.Theme = _theme;
+        SettingsManager.Save();
     }
 
     // ===== 설정 로드/저장 =====
@@ -862,7 +866,7 @@ public partial class SettingsWindow : Window
     private void RestoreWindowSize()
     {
         Width = 540;
-        Height = 680;
+        Height = 780;
     }
 
     protected override void OnClosed(EventArgs e)
