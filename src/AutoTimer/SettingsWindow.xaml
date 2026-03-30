@@ -343,6 +343,8 @@
                                   SelectionChanged="OnThemeChanged"/>
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="?" Padding="8,2" FontSize="14" BorderThickness="0"
+                                Background="Transparent" Foreground="{DynamicResource FgDimBrush}" Click="OnHelp" Margin="0,0,2,0"/>
                         <Button Content="&#x2012;" Padding="8,2" FontSize="14" BorderThickness="0"
                                 Background="Transparent" Click="OnMinimize" Margin="0,0,2,0"/>
                         <Button Content="&#x2715;" Padding="8,2" FontSize="14" BorderThickness="0"

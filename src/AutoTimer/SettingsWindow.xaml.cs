@@ -470,15 +470,23 @@ public partial class SettingsWindow : Window
     {
         try
         {
-            // 저장 전 모니터 유효성 검증
-            if (!MonitorService.IsTargetMonitorAvailable())
+            // 저장 전: UI에서 선택한 모니터가 현재 연결되어 있는지 검증
+            MonitorService.InvalidateCache();
+            _cachedScreens = null;
+            var currentScreens = MonitorService.GetScreens();
+            if (CmbMonitor.SelectedIndex >= 0 && CmbMonitor.SelectedIndex < currentScreens.Count)
             {
-                OnRefreshMonitors(sender, e);
-                var msg = _lang == "ko"
-                    ? "설정된 모니터가 연결되지 않아 목록을 갱신했습니다. 모니터를 다시 선택해주세요."
-                    : "Target monitor disconnected. List refreshed. Please re-select.";
-                Controls.CustomDialog.ShowWarning(msg, "AutoTimer", this);
-                return;
+                var selectedName = currentScreens[CmbMonitor.SelectedIndex].DeviceName;
+                var liveScreens = MonitorService.GetScreens();
+                if (!liveScreens.Any(s => s.DeviceName == selectedName))
+                {
+                    OnRefreshMonitors(sender, e);
+                    var msg = _lang == "ko"
+                        ? "선택한 모니터가 연결되지 않아 목록을 갱신했습니다. 모니터를 다시 선택해주세요."
+                        : "Selected monitor disconnected. List refreshed. Please re-select.";
+                    Controls.CustomDialog.ShowWarning(msg, "AutoTimer", this);
+                    return;
+                }
             }
 
             SaveToSettings();
@@ -815,6 +823,14 @@ public partial class SettingsWindow : Window
 
     private void OnMinimize(object sender, RoutedEventArgs e)
         => WindowState = WindowState.Minimized;
+
+    private void OnHelp(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Controls.TutorialDialog();
+        dlg.Owner = this;
+        dlg.SetLanguage(_lang);
+        dlg.ShowDialog();
+    }
 
     private void OnCloseWindow(object sender, RoutedEventArgs e)
     {
