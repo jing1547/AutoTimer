@@ -122,8 +122,10 @@ public sealed class TrayIconManager : IDisposable
 
         if (!string.IsNullOrEmpty(msg))
         {
-            var icon = result == SyncResult.Success ? MessageBoxImage.Information : MessageBoxImage.Warning;
-            MessageBox.Show(msg, "AutoTimer", MessageBoxButton.OK, icon);
+            if (result == SyncResult.Success)
+                Controls.CustomDialog.ShowInfo(msg);
+            else
+                Controls.CustomDialog.ShowWarning(msg);
         }
     }
 

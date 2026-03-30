@@ -1,0 +1,40 @@
+<Window x:Class="AutoTimer.Controls.CustomDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None" AllowsTransparency="True"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize" ShowInTaskbar="False"
+        SizeToContent="WidthAndHeight"
+        MinWidth="320" MaxWidth="460"
+        FontFamily="pack://application:,,,/Assets/#NanumSquare Neo Regular"
+        FontSize="14">
+    <Border CornerRadius="0"
+            BorderBrush="{DynamicResource AccentDimBrush}" BorderThickness="1"
+            Background="{DynamicResource BgPanelBrush}" Padding="0">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- 타이틀 -->
+            <Border Grid.Row="0" Background="{DynamicResource BgHoverBrush}"
+                    CornerRadius="0" Padding="16,10">
+                <TextBlock x:Name="TxtTitle" Text="AutoTimer" FontSize="15" FontWeight="Bold"
+                           Foreground="{DynamicResource AccentBrush}"
+                           FontFamily="pack://application:,,,/Assets/#NanumSquare Neo Regular"/>
+            </Border>
+
+            <!-- 메시지 -->
+            <TextBlock Grid.Row="1" x:Name="TxtMessage" TextWrapping="Wrap"
+                       Foreground="{DynamicResource FgBrush}" Margin="20,16,20,16"
+                       FontFamily="pack://application:,,,/Assets/#NanumSquare Neo Regular"
+                       FontSize="14" LineHeight="22"/>
+
+            <!-- 버튼 -->
+            <StackPanel Grid.Row="2" x:Name="ButtonPanel" Orientation="Horizontal"
+                        HorizontalAlignment="Center" Margin="16,4,16,16"/>
+        </Grid>
+    </Border>
+</Window>

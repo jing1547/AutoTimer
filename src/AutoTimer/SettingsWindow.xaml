@@ -166,7 +166,7 @@
                         <Border x:Name="Bd" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="3" Padding="{TemplateBinding Padding}">
+                                CornerRadius="0" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -190,7 +190,7 @@
                     <ControlTemplate TargetType="RadioButton">
                         <Border x:Name="Bd" Background="{DynamicResource BgPanelBrush}"
                                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                                CornerRadius="3" Padding="10,4" Cursor="Hand">
+                                CornerRadius="0" Padding="10,4" Cursor="Hand">
                             <ContentPresenter x:Name="Cp" HorizontalAlignment="Center"
                                               TextBlock.FontFamily="{DynamicResource AppFont}" TextBlock.FontSize="14"
                                               TextBlock.Foreground="{DynamicResource FgBrush}"/>
@@ -275,7 +275,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd" Background="Transparent" CornerRadius="3" Padding="4,2">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="0" Padding="4,2">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -374,7 +374,7 @@
                         <RadioButton x:Name="RbLocal" GroupName="TimeSource" Style="{StaticResource SegmentRadio}"/>
                     </StackPanel>
 
-                    <Border Background="{DynamicResource BgPanelBrush}" CornerRadius="4" Padding="12,8" Margin="0,6">
+                    <Border Background="{DynamicResource BgPanelBrush}" CornerRadius="0" Padding="12,8" Margin="0,6">
                         <TextBlock x:Name="TxtCurrentTime" FontFamily="{StaticResource AppFont}" FontSize="18"
                                    Foreground="{DynamicResource AccentBrush}"/>
                     </Border>
@@ -420,7 +420,7 @@
                     <ItemsControl x:Name="WeeklyList">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="{DynamicResource BgPanelBrush}" CornerRadius="3"
+                                <Border Background="{DynamicResource BgPanelBrush}" CornerRadius="0"
                                         Padding="6,4" Margin="0,2"
                                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <Grid>
@@ -460,7 +460,7 @@
                     <ItemsControl x:Name="OneTimeList">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="{DynamicResource BgPanelBrush}" CornerRadius="3"
+                                <Border Background="{DynamicResource BgPanelBrush}" CornerRadius="0"
                                         Padding="8,5" Margin="0,2"
                                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <Grid>
@@ -509,7 +509,7 @@
                 <Border x:Name="TimePickerPanel" Visibility="Collapsed"
                         Background="{DynamicResource BgPanelBrush}"
                         BorderBrush="{DynamicResource AccentDimBrush}" BorderThickness="1"
-                        CornerRadius="6" Padding="16,12"
+                        CornerRadius="0" Padding="16,12"
                         HorizontalAlignment="Center" VerticalAlignment="Center">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -546,7 +546,7 @@
                 <Border x:Name="DatePickerPanel" Visibility="Collapsed"
                         Background="{DynamicResource BgPanelBrush}"
                         BorderBrush="{DynamicResource AccentDimBrush}" BorderThickness="1"
-                        CornerRadius="6" Padding="12,10"
+                        CornerRadius="0" Padding="12,10"
                         HorizontalAlignment="Center" VerticalAlignment="Center">
                     <StackPanel>
                         <Grid Margin="0,0,0,8">

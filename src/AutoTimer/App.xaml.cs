@@ -21,7 +21,7 @@ public partial class App : Application
 
         if (!SingleInstance.Acquire())
         {
-            MessageBox.Show("AutoTimer가 이미 실행 중입니다.", "AutoTimer", MessageBoxButton.OK, MessageBoxImage.Information);
+            Controls.CustomDialog.ShowInfo("AutoTimer가 이미 실행 중입니다.");
             Shutdown();
             return;
         }
@@ -90,7 +90,7 @@ public partial class App : Application
             {
                 var lang = SettingsManager.Current.General.Language;
                 var msg = lang == "ko" ? "설정이 변경되었습니다. 먼저 저장해주세요." : "Settings changed. Please save first.";
-                MessageBox.Show(msg, "AutoTimer", MessageBoxButton.OK, MessageBoxImage.Warning);
+                Controls.CustomDialog.ShowWarning(msg);
                 return;
             }
 
@@ -102,7 +102,7 @@ public partial class App : Application
             {
                 var lang = SettingsManager.Current.General.Language;
                 var msg = lang == "ko" ? "영상 파일이 설정되지 않았거나 존재하지 않습니다." : "Video file is not set or does not exist.";
-                MessageBox.Show(msg, "AutoTimer", MessageBoxButton.OK, MessageBoxImage.Warning);
+                Controls.CustomDialog.ShowWarning(msg);
                 return;
             }
 
@@ -111,7 +111,7 @@ public partial class App : Application
             {
                 var lang2 = SettingsManager.Current.General.Language;
                 var msg2 = lang2 == "ko" ? "연결된 모니터를 찾을 수 없습니다." : "No connected monitor found.";
-                MessageBox.Show(msg2, "AutoTimer", MessageBoxButton.OK, MessageBoxImage.Warning);
+                Controls.CustomDialog.ShowWarning(msg2);
                 return;
             }
 
@@ -121,7 +121,7 @@ public partial class App : Application
                 var msg2 = lang2 == "ko"
                     ? $"설정된 모니터가 연결되지 않아 주 모니터({screen.DeviceName})에서 재생합니다."
                     : $"Target monitor disconnected. Playing on primary ({screen.DeviceName}).";
-                MessageBox.Show(msg2, "AutoTimer", MessageBoxButton.OK, MessageBoxImage.Information);
+                Controls.CustomDialog.ShowInfo(msg2);
             }
 
             var window = new VideoWindow(screen, isTestPlay: true);

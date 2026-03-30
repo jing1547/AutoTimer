@@ -18,7 +18,53 @@ public partial class SettingsWindow : Window
     private string _lang = "ko";
     private string _theme = "dark";
     private bool _initialized;
-    public bool IsDirty { get; private set; }
+
+    public bool IsDirty
+    {
+        get
+        {
+            if (!_initialized) return false;
+            var s = SettingsManager.Current;
+
+            if ((ChkRunOnStartup.IsChecked == true) != s.General.RunOnStartup) return true;
+            if ((RbServer.IsChecked == true ? "server" : "local") != s.General.TimeSource) return true;
+            if (_lang != s.General.Language) return true;
+            if (_theme != s.General.Theme) return true;
+
+            var screens = MonitorService.GetScreens();
+            if (CmbMonitor.SelectedIndex >= 0 && CmbMonitor.SelectedIndex < screens.Count)
+            {
+                if (screens[CmbMonitor.SelectedIndex].DeviceName != s.Display.TargetMonitor) return true;
+            }
+
+            if (_fullVideoPath != s.Playback.DefaultVideoPath) return true;
+
+            // 스케줄 비교
+            if (WeeklyItems.Count != s.Schedules.Count) return true;
+            for (int i = 0; i < WeeklyItems.Count; i++)
+            {
+                var ui = WeeklyItems[i];
+                var saved = s.Schedules[i];
+                if (ui.Enabled != saved.Enabled) return true;
+                var uiModel = ui.ToModel();
+                if (uiModel.DayOfWeek != saved.DayOfWeek) return true;
+                if (ui.Time != saved.Time) return true;
+                if (ui.Label != saved.Label) return true;
+            }
+
+            if (OneTimeItems.Count != s.OneTimeSchedules.Count) return true;
+            for (int i = 0; i < OneTimeItems.Count; i++)
+            {
+                var ui = OneTimeItems[i];
+                var saved = s.OneTimeSchedules[i];
+                if (ui.Date != saved.Date) return true;
+                if (ui.Time != saved.Time) return true;
+                if (ui.Label != saved.Label) return true;
+            }
+
+            return false;
+        }
+    }
 
     public static readonly List<string> DayOptionsEn = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     public static readonly List<string> DayOptionsKo = ["월", "화", "수", "목", "금", "토", "일"];
@@ -55,21 +101,7 @@ public partial class SettingsWindow : Window
         UpdateClock();
 
         _initialized = true;
-
-        // 변경 감지: 모든 입력 컨트롤에서 dirty 플래그 세움
-        ChkRunOnStartup.Checked += MarkDirty;
-        ChkRunOnStartup.Unchecked += MarkDirty;
-        RbServer.Checked += MarkDirty;
-        RbLocal.Checked += MarkDirty;
-        CmbMonitor.SelectionChanged += MarkDirtySel;
-        TxtVideoPath.TextChanged += MarkDirtyText;
-        WeeklyItems.CollectionChanged += (_, _) => { if (_initialized) IsDirty = true; };
-        OneTimeItems.CollectionChanged += (_, _) => { if (_initialized) IsDirty = true; };
     }
-
-    private void MarkDirty(object sender, RoutedEventArgs e) { if (_initialized) IsDirty = true; }
-    private void MarkDirtyText(object sender, System.Windows.Controls.TextChangedEventArgs e) { if (_initialized) IsDirty = true; }
-    private void MarkDirtySel(object sender, System.Windows.Controls.SelectionChangedEventArgs e) { if (_initialized) IsDirty = true; }
 
     // ===== 테마 =====
     private void ApplyTheme(string theme)
@@ -265,7 +297,6 @@ public partial class SettingsWindow : Window
 
         SettingsManager.Save();
         SetStartup(s.General.RunOnStartup);
-        IsDirty = false;
     }
 
     private void UpdateClock()
@@ -356,7 +387,7 @@ public partial class SettingsWindow : Window
                 var msg = _lang == "ko"
                     ? $"이전 모니터가 연결 해제되었습니다. 목록이 갱신되었습니다."
                     : $"Previous monitor disconnected. List refreshed.";
-                MessageBox.Show(msg, "AutoTimer", MessageBoxButton.OK, MessageBoxImage.Information);
+                Controls.CustomDialog.ShowInfo(msg, "AutoTimer", this);
             }
         }
     }
@@ -401,7 +432,7 @@ public partial class SettingsWindow : Window
             var msg = _lang == "ko"
                 ? "NTP 서버에 연결할 수 없습니다.\n인터넷 연결을 확인해주세요."
                 : "Cannot reach NTP server.\nCheck your internet connection.";
-            MessageBox.Show(msg, "AutoTimer", MessageBoxButton.OK, MessageBoxImage.Warning);
+            Controls.CustomDialog.ShowWarning(msg, "AutoTimer", this);
         }
     }
 
@@ -416,7 +447,7 @@ public partial class SettingsWindow : Window
                 var msg = _lang == "ko"
                     ? "설정된 모니터가 연결되지 않아 목록을 갱신했습니다. 모니터를 다시 선택해주세요."
                     : "Target monitor disconnected. List refreshed. Please re-select.";
-                MessageBox.Show(msg, "AutoTimer", MessageBoxButton.OK, MessageBoxImage.Warning);
+                Controls.CustomDialog.ShowWarning(msg, "AutoTimer", this);
                 return;
             }
 
@@ -426,7 +457,7 @@ public partial class SettingsWindow : Window
         catch (Exception ex)
         {
             var msg = _lang == "ko" ? $"저장 실패: {ex.Message}" : $"Save failed: {ex.Message}";
-            MessageBox.Show(msg, "AutoTimer", MessageBoxButton.OK, MessageBoxImage.Error);
+            Controls.CustomDialog.ShowWarning(msg, "AutoTimer", this);
         }
     }
 
@@ -755,14 +786,13 @@ public partial class SettingsWindow : Window
     {
         if (IsDirty)
         {
-            var title = "AutoTimer";
             var msg = _lang == "ko"
-                ? "변경 사항이 저장되지 않았습니다.\n저장하고 닫으시겠습니까?"
-                : "Unsaved changes.\nSave before closing?";
+                ? "변경 사항이 저장되지 않았습니다."
+                : "You have unsaved changes.";
 
-            var result = MessageBox.Show(msg, title, MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+            var result = Controls.CustomDialog.ShowYesNoCancel(msg, "AutoTimer", this);
 
-            if (result == MessageBoxResult.Yes)
+            if (result == "yes")
             {
                 try
                 {
@@ -771,7 +801,7 @@ public partial class SettingsWindow : Window
                 }
                 catch { }
             }
-            else if (result == MessageBoxResult.Cancel)
+            else if (result == "cancel" || result == null)
             {
                 return;
             }
