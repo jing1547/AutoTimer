@@ -8,11 +8,16 @@ namespace AutoTimer.Services;
 public static class PreloadService
 {
     private static LibVLC? _libvlc;
+    private static readonly object _lock = new();
 
     public static LibVLC GetLibVLC()
     {
-        _libvlc ??= new LibVLC("--quiet");
-        return _libvlc;
+        if (_libvlc is not null) return _libvlc;
+        lock (_lock)
+        {
+            _libvlc ??= new LibVLC("--quiet");
+            return _libvlc;
+        }
     }
 
     public static void Shutdown()

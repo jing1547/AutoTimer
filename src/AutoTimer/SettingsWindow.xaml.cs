@@ -19,6 +19,20 @@ public partial class SettingsWindow : Window
     private string _theme = "dark";
     private bool _initialized;
 
+    private List<ScreenInfo>? _cachedScreens;
+    private DateTime _screensCacheTime = DateTime.MinValue;
+
+    private List<ScreenInfo> GetCachedScreens()
+    {
+        var now = DateTime.UtcNow;
+        if (_cachedScreens is null || (now - _screensCacheTime).TotalSeconds >= 5)
+        {
+            _cachedScreens = MonitorService.GetScreens();
+            _screensCacheTime = now;
+        }
+        return _cachedScreens;
+    }
+
     public bool IsDirty
     {
         get
@@ -31,7 +45,7 @@ public partial class SettingsWindow : Window
             if (_lang != s.General.Language) return true;
             if (_theme != s.General.Theme) return true;
 
-            var screens = MonitorService.GetScreens();
+            var screens = GetCachedScreens();
             if (CmbMonitor.SelectedIndex >= 0 && CmbMonitor.SelectedIndex < screens.Count)
             {
                 if (screens[CmbMonitor.SelectedIndex].DeviceName != s.Display.TargetMonitor) return true;
@@ -299,14 +313,20 @@ public partial class SettingsWindow : Window
         SetStartup(s.General.RunOnStartup);
     }
 
+    private DateTime _lastTimeZoneClear = DateTime.MinValue;
+
     private void UpdateClock()
     {
         var isServer = RbServer.IsChecked == true;
         DateTime now;
 
         // 시간대 변경 감지 (5초마다 캐시 갱신)
-        if (DateTime.UtcNow.Second % 5 == 0)
+        var utcNow = DateTime.UtcNow;
+        if ((utcNow - _lastTimeZoneClear).TotalSeconds >= 5)
+        {
             TimeZoneInfo.ClearCachedData();
+            _lastTimeZoneClear = utcNow;
+        }
 
         if (isServer)
         {
@@ -358,6 +378,8 @@ public partial class SettingsWindow : Window
 
     private void OnRefreshMonitors(object sender, RoutedEventArgs e)
     {
+        MonitorService.InvalidateCache();
+        _cachedScreens = null; // 로컬 캐시도 무효화
         var prevSelected = CmbMonitor.SelectedItem?.ToString();
         var screens = MonitorService.GetScreens();
         CmbMonitor.Items.Clear();
@@ -822,6 +844,7 @@ public partial class SettingsWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _clockTimer.Stop();
+        _cachedScreens = null;
         base.OnClosed(e);
     }
 }

@@ -81,6 +81,7 @@ public sealed class SchedulerService : IDisposable
         }
 
         // 일회성 스케줄
+        var needSave = false;
         foreach (var s in settings.OneTimeSchedules.ToList())
         {
             if (s.Date != currentDate || s.Time != currentTime)
@@ -88,7 +89,7 @@ public sealed class SchedulerService : IDisposable
 
             var key = $"{s.Id}:{currentDate} {currentTime}";
             if (!_triggeredKeys.Add(key))
-                return;
+                continue;
 
             var videoPath = ResolveVideoPath(s.VideoPath, settings);
             ScheduleTriggered?.Invoke(videoPath, s.Label);
@@ -96,10 +97,11 @@ public sealed class SchedulerService : IDisposable
             if (s.AutoDelete)
             {
                 settings.OneTimeSchedules.Remove(s);
-                SettingsManager.Save();
+                needSave = true;
             }
-            return;
         }
+        if (needSave)
+            SettingsManager.Save();
     }
 
     private static string ResolveVideoPath(string? scheduleVideoPath, AppSettings settings)

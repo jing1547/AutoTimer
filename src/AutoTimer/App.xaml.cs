@@ -150,7 +150,13 @@ public partial class App : Application
             try { SettingsManager.Save(); } catch { }
         }
 
-        _scheduler?.Dispose();
+        if (_scheduler is not null)
+        {
+            _scheduler.ScheduleTriggered -= OnScheduleTriggered;
+            _scheduler.Dispose();
+        }
+        if (_trayManager is not null)
+            _trayManager.TestPlayRequested -= OnTestPlayRequested;
         _timeSync?.Dispose();
         _trayManager?.Dispose();
         PreloadService.Shutdown();

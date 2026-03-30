@@ -60,6 +60,10 @@ public partial class VideoWindow : Window
     {
         try
         {
+            // 기존 타이머 정리 (Play 재호출 시 누수 방지)
+            _watchdogTimer?.Stop();
+            _monitorCheckTimer?.Stop();
+
             CleanupPlayer();
             var libvlc = PreloadService.GetLibVLC();
             _mediaPlayer = new MediaPlayer(libvlc);

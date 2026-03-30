@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -5,7 +6,26 @@ namespace AutoTimer.Services;
 
 public static class MonitorService
 {
+    private static List<ScreenInfo>? _cachedScreens;
+    private static DateTime _cacheTime = DateTime.MinValue;
+    private const int CacheTtlSeconds = 3;
+
+    /// <summary>캐시를 강제 무효화한다 (모니터 새로고침 등)</summary>
+    public static void InvalidateCache() => _cachedScreens = null;
+
     public static List<ScreenInfo> GetScreens()
+    {
+        var now = DateTime.UtcNow;
+        if (_cachedScreens is not null && (now - _cacheTime).TotalSeconds < CacheTtlSeconds)
+            return _cachedScreens;
+
+        var result = GetScreensCore();
+        _cachedScreens = result;
+        _cacheTime = now;
+        return result;
+    }
+
+    private static List<ScreenInfo> GetScreensCore()
     {
         var screens = new List<ScreenInfo>();
 
