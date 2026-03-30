@@ -91,6 +91,8 @@ public partial class SettingsWindow : Window
     public ObservableCollection<OneTimeScheduleVM> OneTimeItems { get; } = [];
 
     public event Action? TestPlayRequested;
+    public event Action? RefreshRequested;
+    public event Action? ForceStopRequested;
 
     public SettingsWindow(TimeSyncService timeSync)
     {
@@ -219,6 +221,8 @@ public partial class SettingsWindow : Window
 
             BtnAddOneTime.Content = "+ 타이머 추가";
             BtnTestPlay.Content = "테스트 재생";
+            BtnRefresh.Content = "새로고침";
+            BtnForceStop.Content = "영상 종료";
             BtnSync.Content = "서버 동기화";
             BtnSave.Content = "저장";
         }
@@ -241,6 +245,8 @@ public partial class SettingsWindow : Window
 
             BtnAddOneTime.Content = "+ Add timer";
             BtnTestPlay.Content = "Test play";
+            BtnRefresh.Content = "Refresh";
+            BtnForceStop.Content = "Stop video";
             BtnSync.Content = "Sync now";
             BtnSave.Content = "SAVE";
         }
@@ -439,6 +445,8 @@ public partial class SettingsWindow : Window
     }
 
     private void OnTestPlay(object sender, RoutedEventArgs e) => TestPlayRequested?.Invoke();
+    private void OnRefresh(object sender, RoutedEventArgs e) => RefreshRequested?.Invoke();
+    private void OnForceStop(object sender, RoutedEventArgs e) => ForceStopRequested?.Invoke();
 
     private async void OnSync(object sender, RoutedEventArgs e)
     {

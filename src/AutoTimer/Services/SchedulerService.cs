@@ -111,6 +111,62 @@ public sealed class SchedulerService : IDisposable
         return settings.Playback.DefaultVideoPath;
     }
 
+    /// <summary>
+    /// 현재 시간 기준으로 재생 중이어야 할 스케줄을 찾는다.
+    /// 영상 길이(videoDurationMs)를 기반으로, 스케줄 시작 시각 + 영상 길이 &gt; 현재 시각인 스케줄을 반환한다.
+    /// </summary>
+    public (string videoPath, TimeSpan elapsed)? FindCurrentSchedule(long videoDurationMs)
+    {
+        var now = _timeSync.Now;
+        var settings = SettingsManager.Current;
+        var currentDate = now.ToString("yyyy-MM-dd");
+        var currentDay = now.DayOfWeek;
+
+        // 후보 스케줄의 (시작시각, 비디오경로) 수집
+        var candidates = new List<(DateTime startTime, string videoPath)>();
+
+        foreach (var s in settings.Schedules.Where(s => s.Enabled))
+        {
+            if (s.DayOfWeek != currentDay) continue;
+            if (!TryParseTime(s.Time, out var h, out var m)) continue;
+
+            var startTime = now.Date.AddHours(h).AddMinutes(m);
+            candidates.Add((startTime, ResolveVideoPath(s.VideoPath, settings)));
+        }
+
+        foreach (var s in settings.OneTimeSchedules)
+        {
+            if (s.Date != currentDate) continue;
+            if (!TryParseTime(s.Time, out var h, out var m)) continue;
+
+            var startTime = now.Date.AddHours(h).AddMinutes(m);
+            candidates.Add((startTime, ResolveVideoPath(s.VideoPath, settings)));
+        }
+
+        // 현재 시각 기준으로 아직 영상이 끝나지 않은 가장 최근 스케줄 찾기
+        (DateTime startTime, string videoPath)? best = null;
+        foreach (var c in candidates)
+        {
+            var elapsed = now - c.startTime;
+            if (elapsed.TotalMilliseconds < 0) continue; // 아직 시작 안 됨
+            if (elapsed.TotalMilliseconds >= videoDurationMs) continue; // 이미 끝남
+
+            if (best is null || c.startTime > best.Value.startTime)
+                best = c;
+        }
+
+        if (best is null) return null;
+        return (best.Value.videoPath, now - best.Value.startTime);
+    }
+
+    private static bool TryParseTime(string time, out int hour, out int minute)
+    {
+        hour = 0; minute = 0;
+        var parts = time.Split(':');
+        if (parts.Length < 2) return false;
+        return int.TryParse(parts[0], out hour) && int.TryParse(parts[1], out minute);
+    }
+
     public void Dispose()
     {
         _tickTimer?.Dispose();

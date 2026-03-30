@@ -41,6 +41,8 @@ public partial class App : Application
 
         _trayManager = new TrayIconManager(_timeSync);
         _trayManager.TestPlayRequested += OnTestPlayRequested;
+        _trayManager.RefreshRequested += OnRefreshRequested;
+        _trayManager.ForceStopRequested += OnForceStopRequested;
         _trayManager.Initialize();
 
         _trayManager.OpenSettings();
@@ -132,6 +134,69 @@ public partial class App : Application
         });
     }
 
+    private async void OnRefreshRequested()
+    {
+        if (Dispatcher.HasShutdownStarted) return;
+
+        if (_scheduler is null) return;
+
+        var videoPath = SettingsManager.Current.Playback.DefaultVideoPath;
+        if (string.IsNullOrWhiteSpace(videoPath) || !System.IO.File.Exists(videoPath))
+            return;
+
+        // 영상 길이를 가져오기 위해 파싱 (백그라운드에서)
+        long videoDurationMs;
+        try
+        {
+            videoDurationMs = await System.Threading.Tasks.Task.Run(() =>
+            {
+                var libvlc = PreloadService.GetLibVLC();
+                using var media = new LibVLCSharp.Shared.Media(libvlc, new Uri(videoPath));
+                media.Parse(LibVLCSharp.Shared.MediaParseOptions.ParseLocal).Wait();
+                return media.Duration;
+            });
+            if (videoDurationMs <= 0) return;
+        }
+        catch { return; }
+
+        // UI 스레드로 복귀
+        var result = _scheduler.FindCurrentSchedule(videoDurationMs);
+        if (result is null) return; // 현재 재생할 스케줄 없음 — 무응답
+
+        var (resolvedPath, elapsed) = result.Value;
+        if (string.IsNullOrWhiteSpace(resolvedPath))
+            resolvedPath = videoPath;
+        if (!System.IO.File.Exists(resolvedPath))
+            return;
+
+        if (_activeVideo is not null)
+        {
+            // 이미 재생 중 — seek으로 동기화
+            _activeVideo.SeekTo(resolvedPath, elapsed);
+        }
+        else
+        {
+            // 재생 중이 아님 — 새 창 열고 seek
+            var (screen, _) = MonitorService.GetTargetScreenSafe();
+            if (screen.DeviceName == "NONE") return;
+
+            var window = new VideoWindow(screen, isTestPlay: false);
+            window.Closed += (_, _) => { if (_activeVideo == window) _activeVideo = null; };
+            _activeVideo = window;
+            window.Show();
+            window.SeekTo(resolvedPath, elapsed);
+        }
+    }
+
+    private void OnForceStopRequested()
+    {
+        if (Dispatcher.HasShutdownStarted) return;
+
+        if (_activeVideo is null) return;
+        _activeVideo.ForceClose();
+        _activeVideo = null;
+    }
+
     private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         System.IO.File.AppendAllText(
@@ -156,7 +221,11 @@ public partial class App : Application
             _scheduler.Dispose();
         }
         if (_trayManager is not null)
+        {
             _trayManager.TestPlayRequested -= OnTestPlayRequested;
+            _trayManager.RefreshRequested -= OnRefreshRequested;
+            _trayManager.ForceStopRequested -= OnForceStopRequested;
+        }
         _timeSync?.Dispose();
         _trayManager?.Dispose();
         PreloadService.Shutdown();

@@ -137,11 +137,15 @@ public partial class VideoWindow : Window
     {
         if (_mediaPlayer is not null)
         {
-            _mediaPlayer.EndReached -= OnEndReached;
-            VideoView.MediaPlayer = null;
-            try { _mediaPlayer.Stop(); } catch { }
-            _mediaPlayer.Dispose();
+            var player = _mediaPlayer;
             _mediaPlayer = null;
+            player.EndReached -= OnEndReached;
+            VideoView.MediaPlayer = null;
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                try { player.Stop(); } catch { }
+                player.Dispose();
+            });
         }
     }
 
@@ -155,10 +159,79 @@ public partial class VideoWindow : Window
         Close();
     }
 
+    /// <summary>영상의 특정 위치로 seek한다. 이미 재생 중이면 seek만, 아니면 재생 후 seek.</summary>
+    public void SeekTo(string videoPath, TimeSpan position)
+    {
+        if (_mediaPlayer is not null && _mediaPlayer.IsPlaying)
+        {
+            // 이미 재생 중 — seek만
+            var lengthMs = _mediaPlayer.Length;
+            if (lengthMs > 0)
+            {
+                var targetMs = (long)position.TotalMilliseconds;
+                if (targetMs >= lengthMs) return;
+                _mediaPlayer.SeekTo(TimeSpan.FromMilliseconds(targetMs));
+            }
+        }
+        else
+        {
+            // 재생 중이 아님 — 새로 재생 후 seek
+            var targetMs = (long)position.TotalMilliseconds;
+            PlayWithSeek(videoPath, targetMs);
+        }
+    }
+
+    private void PlayWithSeek(string videoPath, long seekMs)
+    {
+        try
+        {
+            _watchdogTimer?.Stop();
+            _monitorCheckTimer?.Stop();
+
+            CleanupPlayer();
+            var libvlc = PreloadService.GetLibVLC();
+            _mediaPlayer = new MediaPlayer(libvlc);
+            _mediaPlayer.EndReached += OnEndReached;
+            VideoView.MediaPlayer = _mediaPlayer;
+
+            var media = new Media(libvlc, new Uri(videoPath));
+            // 시작 시간을 미디어 옵션으로 지정 — seek보다 확실함
+            media.AddOption($":start-time={seekMs / 1000.0:F1}");
+            _mediaPlayer.Play(media);
+
+            _watchdogTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(30) };
+            _watchdogTimer.Tick += (_, _) => { _watchdogTimer?.Stop(); CleanupAndClose(); };
+            _watchdogTimer.Start();
+
+            _monitorCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+            _monitorCheckTimer.Tick += OnMonitorCheck;
+            _monitorCheckTimer.Start();
+        }
+        catch
+        {
+            CleanupAndClose();
+        }
+    }
+
     public void ForceClose()
     {
+        if (_closing) return;
         _closing = true;
-        CleanupPlayer();
+        _watchdogTimer?.Stop();
+        _monitorCheckTimer?.Stop();
+        // Stop을 백그라운드에서 실행하여 UI 데드락 방지
+        var player = _mediaPlayer;
+        _mediaPlayer = null;
+        if (player is not null)
+        {
+            player.EndReached -= OnEndReached;
+            VideoView.MediaPlayer = null;
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                try { player.Stop(); } catch { }
+                player.Dispose();
+            });
+        }
         Close();
     }
 

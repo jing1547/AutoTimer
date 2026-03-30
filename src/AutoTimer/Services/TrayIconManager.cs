@@ -12,8 +12,12 @@ public sealed class TrayIconManager : IDisposable
     private SettingsWindow? _settingsWindow;
 
     private Action? _settingsTestPlayHandler;
+    private Action? _settingsRefreshHandler;
+    private Action? _settingsForceStopHandler;
 
     public event Action? TestPlayRequested;
+    public event Action? RefreshRequested;
+    public event Action? ForceStopRequested;
 
     /// <summary>설정창이 열려 있고 미저장 변경이 있는지</summary>
     public bool HasUnsavedSettings => _settingsWindow is not null && _settingsWindow.IsVisible && _settingsWindow.IsDirty;
@@ -47,6 +51,12 @@ public sealed class TrayIconManager : IDisposable
         var testPlayItem = new System.Windows.Controls.MenuItem { Header = "테스트 재생 (_T)" };
         testPlayItem.Click += OnTestPlayClick;
 
+        var refreshItem = new System.Windows.Controls.MenuItem { Header = "새로고침 (_F)" };
+        refreshItem.Click += (_, _) => RefreshRequested?.Invoke();
+
+        var forceStopItem = new System.Windows.Controls.MenuItem { Header = "영상 강제 종료 (_K)" };
+        forceStopItem.Click += (_, _) => ForceStopRequested?.Invoke();
+
         var syncItem = new System.Windows.Controls.MenuItem { Header = "서버 동기화 (_R)" };
         syncItem.Click += OnSyncClick;
 
@@ -57,6 +67,8 @@ public sealed class TrayIconManager : IDisposable
 
         menu.Items.Add(settingsItem);
         menu.Items.Add(testPlayItem);
+        menu.Items.Add(refreshItem);
+        menu.Items.Add(forceStopItem);
         menu.Items.Add(syncItem);
         menu.Items.Add(separator);
         menu.Items.Add(exitItem);
@@ -83,12 +95,25 @@ public sealed class TrayIconManager : IDisposable
         {
             _settingsWindow = new SettingsWindow(_timeSync);
             _settingsTestPlayHandler = () => TestPlayRequested?.Invoke();
+            _settingsRefreshHandler = () => RefreshRequested?.Invoke();
+            _settingsForceStopHandler = () => ForceStopRequested?.Invoke();
             _settingsWindow.TestPlayRequested += _settingsTestPlayHandler;
+            _settingsWindow.RefreshRequested += _settingsRefreshHandler;
+            _settingsWindow.ForceStopRequested += _settingsForceStopHandler;
             _settingsWindow.Closed += (_, _) =>
             {
-                if (_settingsWindow is not null && _settingsTestPlayHandler is not null)
-                    _settingsWindow.TestPlayRequested -= _settingsTestPlayHandler;
+                if (_settingsWindow is not null)
+                {
+                    if (_settingsTestPlayHandler is not null)
+                        _settingsWindow.TestPlayRequested -= _settingsTestPlayHandler;
+                    if (_settingsRefreshHandler is not null)
+                        _settingsWindow.RefreshRequested -= _settingsRefreshHandler;
+                    if (_settingsForceStopHandler is not null)
+                        _settingsWindow.ForceStopRequested -= _settingsForceStopHandler;
+                }
                 _settingsTestPlayHandler = null;
+                _settingsRefreshHandler = null;
+                _settingsForceStopHandler = null;
                 _settingsWindow = null;
             };
             _settingsWindow.Show();
