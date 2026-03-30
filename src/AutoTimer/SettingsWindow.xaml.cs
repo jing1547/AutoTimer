@@ -775,6 +775,8 @@ public partial class SettingsWindow : Window
 
     private void OnTitleBarDrag(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
+        if (PickerOverlay.Visibility == Visibility.Visible)
+            return;
         if (e.ChangedButton == System.Windows.Input.MouseButton.Left)
             DragMove();
     }
