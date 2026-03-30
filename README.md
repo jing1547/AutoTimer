@@ -14,6 +14,20 @@ NTP 서버 시간 기반의 자동 동영상 타이머 프로그램입니다.
 - **멀티 모니터** — 원하는 모니터를 지정하여 전체화면 재생
 - **다국어 / 테마** — 한국어·English, 다크·라이트·시스템 테마
 
+## 사용 방법
+
+1. `AutoTimer_v1.1.zip` 압축 해제
+2. `AutoTimer.exe` 실행
+
+.NET 런타임 설치가 필요 없습니다.
+
+## 빌드
+
+```
+cd src/AutoTimer
+dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -o ../../AutoTimer_v1.1
+```
+
 ## 환경
 
 - .NET 10 / WPF
