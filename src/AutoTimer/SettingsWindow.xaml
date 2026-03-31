@@ -517,7 +517,6 @@
                     <Button x:Name="BtnTestPlay" Padding="16,7" Click="OnTestPlay"/>
                     <Button x:Name="BtnRefresh" Padding="16,7" Margin="10,0,0,0" Click="OnRefresh"/>
                     <Button x:Name="BtnForceStop" Padding="16,7" Margin="10,0,0,0" Click="OnForceStop"/>
-                    <Button x:Name="BtnTestPopup" Content="팝업 테스트" Padding="16,7" Margin="10,0,0,0" Click="OnTestPopup"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0">
                     <Button x:Name="BtnSync" Padding="16,7" Click="OnSync"/>

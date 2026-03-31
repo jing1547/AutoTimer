@@ -52,7 +52,7 @@ public partial class App : Application
 
     private bool _playbackSuppressed;
 
-    private void OnPreNotification(string videoPath, string label)
+    private void OnPreNotification(string videoPath, string label, DateTime scheduleTime)
     {
         if (Dispatcher.HasShutdownStarted) return;
 
@@ -63,7 +63,8 @@ public partial class App : Application
 
             _playbackSuppressed = false;
 
-            var popup = new Controls.PrePlaybackNotification(label, 60, () => _timeSync!.Now);
+            // 스케줄 시각 기준으로 카운트다운 — NTP 시간과 정확히 일치
+            var popup = new Controls.PrePlaybackNotification(label, scheduleTime, () => _timeSync!.Now);
             _activeNotification = popup;
             popup.Completed += cancelled =>
             {

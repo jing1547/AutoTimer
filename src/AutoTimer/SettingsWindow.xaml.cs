@@ -457,11 +457,6 @@ public partial class SettingsWindow : Window
     private void OnRefresh(object sender, RoutedEventArgs e) => RefreshRequested?.Invoke();
     private void OnForceStop(object sender, RoutedEventArgs e) => ForceStopRequested?.Invoke();
 
-    private void OnTestPopup(object sender, RoutedEventArgs e)
-    {
-        var popup = new Controls.PrePlaybackNotification("팝업 테스트", 60, () => _timeSync.Now);
-        popup.Show();
-    }
 
     private async void OnSync(object sender, RoutedEventArgs e)
     {

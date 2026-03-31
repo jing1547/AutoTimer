@@ -11,14 +11,15 @@ public sealed class SchedulerService : IDisposable
     private readonly TimeSyncService _timeSync;
     private Timer? _tickTimer;
     private readonly HashSet<string> _triggeredKeys = [];
+    private readonly HashSet<string> _preNotifiedKeys = [];
     private DateTime _lastCleanup = DateTime.MinValue;
+    private int _lastCheckedMinute = -1;
+    private int _lastPreCheckedMinute = -1;
 
     public event Action<string, string>? ScheduleTriggered;
 
-    /// <summary>스케줄 1분 전 사전 알림 (videoPath, label)</summary>
-    public event Action<string, string>? PreNotification;
-
-    private readonly HashSet<string> _preNotifiedKeys = [];
+    /// <summary>스케줄 1분 전 사전 알림 (videoPath, label, 스케줄시각)</summary>
+    public event Action<string, string, DateTime>? PreNotification;
 
     public SchedulerService(TimeSyncService timeSync)
     {
@@ -27,7 +28,8 @@ public sealed class SchedulerService : IDisposable
 
     public void Start()
     {
-        var now = DateTime.Now;
+        // NTP 기준으로 다음 초 경계에 맞춰 시작
+        var now = _timeSync.Now;
         var delayToNextSecond = 1000 - now.Millisecond;
         _tickTimer = new Timer(OnTick, null, delayToNextSecond, 1000);
     }
@@ -62,10 +64,18 @@ public sealed class SchedulerService : IDisposable
                 _lastCleanup = now;
             }
 
-            // 정각(0초)에만 트리거 체크 — 중복 방지
-            if (now.Second == 0)
+            // 분이 바뀔 때 체크 (NTP 기준 분 변경 감지 — Second==0 놓침 방지)
+            var currentMinute = now.Hour * 60 + now.Minute;
+
+            if (currentMinute != _lastPreCheckedMinute)
             {
+                _lastPreCheckedMinute = currentMinute;
                 CheckPreNotification(settings, now);
+            }
+
+            if (currentMinute != _lastCheckedMinute)
+            {
+                _lastCheckedMinute = currentMinute;
                 CheckTrigger(settings, now);
             }
         }
@@ -85,12 +95,16 @@ public sealed class SchedulerService : IDisposable
         var targetDate = target.ToString("yyyy-MM-dd");
         var targetDay = target.DayOfWeek;
 
+        // 스케줄 시각을 정확히 계산
+        if (!TryParseTime(targetTime, out var h, out var m)) return;
+        var scheduleTime = now.Date.AddHours(h).AddMinutes(m);
+
         foreach (var s in settings.Schedules.Where(s => s.Enabled))
         {
             if (s.DayOfWeek != targetDay || s.Time != targetTime) continue;
             var key = $"pre:{s.Id}:{targetDate} {targetTime}";
             if (!_preNotifiedKeys.Add(key)) continue;
-            PreNotification.Invoke(ResolveVideoPath(s.VideoPath, settings), s.Label);
+            PreNotification.Invoke(ResolveVideoPath(s.VideoPath, settings), s.Label, scheduleTime);
             return;
         }
 
@@ -99,7 +113,7 @@ public sealed class SchedulerService : IDisposable
             if (s.Date != targetDate || s.Time != targetTime) continue;
             var key = $"pre:{s.Id}:{targetDate} {targetTime}";
             if (!_preNotifiedKeys.Add(key)) continue;
-            PreNotification.Invoke(ResolveVideoPath(s.VideoPath, settings), s.Label);
+            PreNotification.Invoke(ResolveVideoPath(s.VideoPath, settings), s.Label, scheduleTime);
             return;
         }
     }
