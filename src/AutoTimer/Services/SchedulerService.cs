@@ -15,6 +15,11 @@ public sealed class SchedulerService : IDisposable
 
     public event Action<string, string>? ScheduleTriggered;
 
+    /// <summary>스케줄 1분 전 사전 알림 (videoPath, label)</summary>
+    public event Action<string, string>? PreNotification;
+
+    private readonly HashSet<string> _preNotifiedKeys = [];
+
     public SchedulerService(TimeSyncService timeSync)
     {
         _timeSync = timeSync;
@@ -40,10 +45,18 @@ public sealed class SchedulerService : IDisposable
                 var today = now.ToString("yyyy-MM-dd");
                 _triggeredKeys.RemoveWhere(k =>
                 {
-                    // key format: "{id}:{yyyy-MM-dd} {HH:mm}"
                     var colonIdx = k.IndexOf(':');
                     if (colonIdx < 0 || colonIdx + 1 >= k.Length) return true;
                     var datepart = k.Substring(colonIdx + 1, Math.Min(10, k.Length - colonIdx - 1));
+                    return string.Compare(datepart, today, StringComparison.Ordinal) < 0;
+                });
+                _preNotifiedKeys.RemoveWhere(k =>
+                {
+                    var firstColon = k.IndexOf(':');
+                    if (firstColon < 0) return true;
+                    var secondColon = k.IndexOf(':', firstColon + 1);
+                    if (secondColon < 0 || secondColon + 1 >= k.Length) return true;
+                    var datepart = k.Substring(secondColon + 1, Math.Min(10, k.Length - secondColon - 1));
                     return string.Compare(datepart, today, StringComparison.Ordinal) < 0;
                 });
                 _lastCleanup = now;
@@ -51,11 +64,43 @@ public sealed class SchedulerService : IDisposable
 
             // 정각(0초)에만 트리거 체크 — 중복 방지
             if (now.Second == 0)
+            {
+                CheckPreNotification(settings, now);
                 CheckTrigger(settings, now);
+            }
         }
         catch
         {
             // 다음 틱에서 재시도
+        }
+    }
+
+    private void CheckPreNotification(AppSettings settings, DateTime now)
+    {
+        if (PreNotification is null) return;
+
+        // 1분 후 시각과 매칭되는 스케줄 찾기
+        var target = now.AddMinutes(1);
+        var targetTime = target.ToString("HH:mm");
+        var targetDate = target.ToString("yyyy-MM-dd");
+        var targetDay = target.DayOfWeek;
+
+        foreach (var s in settings.Schedules.Where(s => s.Enabled))
+        {
+            if (s.DayOfWeek != targetDay || s.Time != targetTime) continue;
+            var key = $"pre:{s.Id}:{targetDate} {targetTime}";
+            if (!_preNotifiedKeys.Add(key)) continue;
+            PreNotification.Invoke(ResolveVideoPath(s.VideoPath, settings), s.Label);
+            return;
+        }
+
+        foreach (var s in settings.OneTimeSchedules)
+        {
+            if (s.Date != targetDate || s.Time != targetTime) continue;
+            var key = $"pre:{s.Id}:{targetDate} {targetTime}";
+            if (!_preNotifiedKeys.Add(key)) continue;
+            PreNotification.Invoke(ResolveVideoPath(s.VideoPath, settings), s.Label);
+            return;
         }
     }
 

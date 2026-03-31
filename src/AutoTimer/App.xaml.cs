@@ -11,6 +11,7 @@ public partial class App : Application
     private TimeSyncService? _timeSync;
     private SchedulerService? _scheduler;
     private VideoWindow? _activeVideo;
+    private Controls.PrePlaybackNotification? _activeNotification;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -37,6 +38,7 @@ public partial class App : Application
 
         _scheduler = new SchedulerService(_timeSync);
         _scheduler.ScheduleTriggered += OnScheduleTriggered;
+        _scheduler.PreNotification += OnPreNotification;
         _scheduler.Start();
 
         _trayManager = new TrayIconManager(_timeSync);
@@ -48,19 +50,57 @@ public partial class App : Application
         _trayManager.OpenSettings();
     }
 
+    private bool _playbackSuppressed;
+
+    private void OnPreNotification(string videoPath, string label)
+    {
+        if (Dispatcher.HasShutdownStarted) return;
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (_activeVideo is not null || _activeNotification is not null)
+                return;
+
+            _playbackSuppressed = false;
+
+            var popup = new Controls.PrePlaybackNotification(label, 60, () => _timeSync!.Now);
+            _activeNotification = popup;
+            popup.Completed += cancelled =>
+            {
+                _activeNotification = null;
+                if (cancelled)
+                    _playbackSuppressed = true;
+            };
+            popup.Show();
+        });
+    }
+
     private void OnScheduleTriggered(string videoPath, string label)
     {
         if (Dispatcher.HasShutdownStarted) return;
 
         Dispatcher.BeginInvoke(() =>
         {
+            // 팝업에서 취소했으면 재생 안 함
+            if (_playbackSuppressed)
+            {
+                _playbackSuppressed = false;
+                return;
+            }
+
+            // 팝업이 아직 떠있으면 닫기 (카운트다운 중 정각 도달)
+            if (_activeNotification is not null)
+            {
+                _activeNotification.Close();
+                _activeNotification = null;
+            }
+
             if (_trayManager?.HasUnsavedSettings == true)
                 return;
 
             if (string.IsNullOrWhiteSpace(videoPath) || !System.IO.File.Exists(videoPath))
                 return;
 
-            // 기존 테스트 재생이 있으면 닫고 실제 재생 우선
             if (_activeVideo is not null && _activeVideo.IsTestPlay)
             {
                 _activeVideo.ForceClose();
@@ -219,6 +259,7 @@ public partial class App : Application
         if (_scheduler is not null)
         {
             _scheduler.ScheduleTriggered -= OnScheduleTriggered;
+            _scheduler.PreNotification -= OnPreNotification;
             _scheduler.Dispose();
         }
         if (_trayManager is not null)
