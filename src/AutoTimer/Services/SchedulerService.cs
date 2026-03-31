@@ -28,10 +28,8 @@ public sealed class SchedulerService : IDisposable
 
     public void Start()
     {
-        // NTP 기준으로 다음 초 경계에 맞춰 시작
-        var now = _timeSync.Now;
-        var delayToNextSecond = 1000 - now.Millisecond;
-        _tickTimer = new Timer(OnTick, null, delayToNextSecond, 1000);
+        // 200ms 간격으로 체크 — 분 변경을 즉시 감지하여 지연 최소화
+        _tickTimer = new Timer(OnTick, null, 0, 200);
     }
 
     private void OnTick(object? state)
