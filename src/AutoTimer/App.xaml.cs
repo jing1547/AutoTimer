@@ -51,6 +51,7 @@ public partial class App : Application
     }
 
     private bool _playbackSuppressed;
+    private string? _pendingVideoPath;
 
     private void OnPreNotification(string videoPath, string label, DateTime scheduleTime)
     {
@@ -62,15 +63,24 @@ public partial class App : Application
                 return;
 
             _playbackSuppressed = false;
+            _pendingVideoPath = videoPath;
 
-            // 스케줄 시각 기준으로 카운트다운 — NTP 시간과 정확히 일치
             var popup = new Controls.PrePlaybackNotification(label, scheduleTime, () => _timeSync!.Now);
             _activeNotification = popup;
             popup.Completed += cancelled =>
             {
                 _activeNotification = null;
                 if (cancelled)
+                {
                     _playbackSuppressed = true;
+                    _pendingVideoPath = null;
+                }
+                else
+                {
+                    // 카운트다운 완료 — ScheduleTriggered 기다리지 않고 바로 재생
+                    StartPlayback(_pendingVideoPath!);
+                    _pendingVideoPath = null;
+                }
             };
             popup.Show();
         });
@@ -82,45 +92,53 @@ public partial class App : Application
 
         Dispatcher.BeginInvoke(() =>
         {
-            // 팝업에서 취소했으면 재생 안 함
             if (_playbackSuppressed)
             {
                 _playbackSuppressed = false;
                 return;
             }
 
-            // 팝업이 아직 떠있으면 닫기 (카운트다운 중 정각 도달)
+            // 팝업에서 이미 재생 시작했으면 스킵
+            if (_activeVideo is not null && !_activeVideo.IsTestPlay)
+                return;
+
+            // 팝업이 아직 떠있으면 닫기
             if (_activeNotification is not null)
             {
                 _activeNotification.Close();
                 _activeNotification = null;
             }
 
-            if (_trayManager?.HasUnsavedSettings == true)
-                return;
-
-            if (string.IsNullOrWhiteSpace(videoPath) || !System.IO.File.Exists(videoPath))
-                return;
-
-            if (_activeVideo is not null && _activeVideo.IsTestPlay)
-            {
-                _activeVideo.ForceClose();
-                _activeVideo = null;
-            }
-
-            if (_activeVideo is not null)
-                return;
-
-            var (screen, isFallback) = MonitorService.GetTargetScreenSafe();
-            if (screen.DeviceName == "NONE" || isFallback)
-                return;
-
-            var window = new VideoWindow(screen, isTestPlay: false);
-            window.Closed += (_, _) => { if (_activeVideo == window) _activeVideo = null; };
-            _activeVideo = window;
-            window.Show();
-            window.Play(videoPath);
+            StartPlayback(videoPath);
         });
+    }
+
+    private void StartPlayback(string videoPath)
+    {
+        if (_trayManager?.HasUnsavedSettings == true)
+            return;
+
+        if (string.IsNullOrWhiteSpace(videoPath) || !System.IO.File.Exists(videoPath))
+            return;
+
+        if (_activeVideo is not null && _activeVideo.IsTestPlay)
+        {
+            _activeVideo.ForceClose();
+            _activeVideo = null;
+        }
+
+        if (_activeVideo is not null)
+            return;
+
+        var (screen, isFallback) = MonitorService.GetTargetScreenSafe();
+        if (screen.DeviceName == "NONE" || isFallback)
+            return;
+
+        var window = new VideoWindow(screen, isTestPlay: false);
+        window.Closed += (_, _) => { if (_activeVideo == window) _activeVideo = null; };
+        _activeVideo = window;
+        window.Show();
+        window.Play(videoPath);
     }
 
     private void OnTestPlayRequested()
