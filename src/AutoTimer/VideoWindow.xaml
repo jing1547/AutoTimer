@@ -4,7 +4,7 @@
         xmlns:vlc="clr-namespace:LibVLCSharp.WPF;assembly=LibVLCSharp.WPF"
         WindowStyle="None"
         ResizeMode="NoResize"
-        ShowInTaskbar="False"
+        ShowInTaskbar="True"
         Background="Black">
     <Grid>
         <vlc:VideoView x:Name="VideoView" />

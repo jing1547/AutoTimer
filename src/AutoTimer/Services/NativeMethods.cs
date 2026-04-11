@@ -36,4 +36,48 @@ internal static partial class NativeMethods
 
     [DllImport("user32.dll")]
     public static extern int SetWindowLong(nint hWnd, int nIndex, int dwNewLong);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetWindowPos(nint hWnd, nint hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetForegroundWindow(nint hWnd);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool ShowWindow(nint hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    public static extern nint GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    public static extern uint GetWindowThreadProcessId(nint hWnd, out uint lpdwProcessId);
+
+    [DllImport("kernel32.dll")]
+    public static extern uint GetCurrentThreadId();
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, [MarshalAs(UnmanagedType.Bool)] bool fAttach);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool BringWindowToTop(nint hWnd);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SystemParametersInfo(uint uiAction, uint uiParam, nint pvParam, uint fWinIni);
+
+    public static readonly nint HWND_TOPMOST = new(-1);
+    public const uint SWP_NOMOVE = 0x0002;
+    public const uint SWP_NOSIZE = 0x0001;
+    public const uint SWP_SHOWWINDOW = 0x0040;
+    public const uint SWP_NOACTIVATE = 0x0010;
+    public const int SW_SHOW = 5;
+    public const int SW_RESTORE = 9;
+    public const uint SPI_GETFOREGROUNDLOCKTIMEOUT = 0x2000;
+    public const uint SPI_SETFOREGROUNDLOCKTIMEOUT = 0x2001;
+    public const uint SPIF_SENDCHANGE = 0x0002;
 }

@@ -36,8 +36,8 @@ public partial class VideoWindow : Window
         _fadeOut = settings.Display.FadeOutEnabled;
         _fadeOutMs = settings.Display.FadeOutDurationMs;
 
-        if (_lockWindow)
-            Topmost = true;
+        // 재생 창은 다른 프로그램(전체화면 앱 등) 뒤에 숨지 않도록 항상 최상위로 고정
+        Topmost = true;
 
         Loaded += OnLoaded;
     }
@@ -49,10 +49,71 @@ public partial class VideoWindow : Window
         Width = _screen.Width;
         Height = _screen.Height;
 
+        // 다른 foreground 앱이 Z-order 위에 있을 때 강제로 끌어올림
+        // (WPF Topmost만으로는 백그라운드 프로세스가 생성한 창의 Z-order 제한을 우회 못 함)
+        ForceToTop();
+
         if (_clickThrough)
         {
             // Loaded 후 1프레임 뒤에 적용 — VideoView HWND 생성 대기
             Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Render, SetClickThrough);
+        }
+    }
+
+    private unsafe void ForceToTop()
+    {
+        var hwnd = new WindowInteropHelper(this).Handle;
+        if (hwnd == nint.Zero) return;
+
+        // Windows의 SetForegroundWindow 제한 우회:
+        // 1) 포커스 락 타임아웃을 0으로 임시 설정
+        // 2) 현재 foreground 스레드에 AttachThreadInput으로 붙음
+        // 3) BringWindowToTop + SetForegroundWindow 호출
+        // 4) 원상복구
+
+        uint oldTimeout = 0;
+        bool timeoutChanged = false;
+        try
+        {
+            if (NativeMethods.SystemParametersInfo(NativeMethods.SPI_GETFOREGROUNDLOCKTIMEOUT, 0, (nint)(&oldTimeout), 0))
+            {
+                NativeMethods.SystemParametersInfo(NativeMethods.SPI_SETFOREGROUNDLOCKTIMEOUT, 0, nint.Zero, NativeMethods.SPIF_SENDCHANGE);
+                timeoutChanged = true;
+            }
+        }
+        catch { }
+
+        var foregroundHwnd = NativeMethods.GetForegroundWindow();
+        uint foregroundThreadId = foregroundHwnd != nint.Zero
+            ? NativeMethods.GetWindowThreadProcessId(foregroundHwnd, out _)
+            : 0;
+        uint currentThreadId = NativeMethods.GetCurrentThreadId();
+        bool attached = false;
+
+        if (foregroundThreadId != 0 && foregroundThreadId != currentThreadId)
+        {
+            attached = NativeMethods.AttachThreadInput(currentThreadId, foregroundThreadId, true);
+        }
+
+        try
+        {
+            NativeMethods.ShowWindow(hwnd, NativeMethods.SW_SHOW);
+            NativeMethods.SetWindowPos(
+                hwnd,
+                NativeMethods.HWND_TOPMOST,
+                0, 0, 0, 0,
+                NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_SHOWWINDOW);
+            NativeMethods.BringWindowToTop(hwnd);
+            NativeMethods.SetForegroundWindow(hwnd);
+            Activate();
+        }
+        finally
+        {
+            if (attached)
+                NativeMethods.AttachThreadInput(currentThreadId, foregroundThreadId, false);
+
+            if (timeoutChanged)
+                NativeMethods.SystemParametersInfo(NativeMethods.SPI_SETFOREGROUNDLOCKTIMEOUT, oldTimeout, nint.Zero, NativeMethods.SPIF_SENDCHANGE);
         }
     }
 
