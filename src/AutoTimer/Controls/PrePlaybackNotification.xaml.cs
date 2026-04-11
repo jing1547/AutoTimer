@@ -88,7 +88,7 @@ public partial class PrePlaybackNotification : Window
 
     private void BtnOk_Click(object sender, RoutedEventArgs e)
     {
-        // 즉시 재생 — 카운트다운 기다리지 않고 창 닫으며 재생 트리거
+        // 안내 창만 닫음 — 재생은 스케줄 시각에 맞춰 자동 트리거됨
         _timer.Stop();
         Cancelled = false;
         Close();

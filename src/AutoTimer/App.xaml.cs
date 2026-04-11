@@ -72,13 +72,13 @@ public partial class App : Application
                 _activeNotification = null;
                 if (cancelled)
                 {
+                    // 재생 취소 — 이 스케줄의 ScheduleTriggered가 와도 무시
                     _playbackSuppressed = true;
                     _pendingVideoPath = null;
                 }
                 else
                 {
-                    // 카운트다운 완료 — ScheduleTriggered 기다리지 않고 바로 재생
-                    StartPlayback(_pendingVideoPath!);
+                    // 확인 — 안내 창만 닫음. 실제 재생은 ScheduleTriggered에서 처리.
                     _pendingVideoPath = null;
                 }
             };

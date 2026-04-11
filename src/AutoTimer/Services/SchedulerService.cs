@@ -215,7 +215,8 @@ public sealed class SchedulerService : IDisposable
             candidates.Add((startTime, ResolveVideoPath(s.VideoPath, settings)));
         }
 
-        // 현재 시각 기준으로 아직 영상이 끝나지 않은 가장 최근 스케줄 찾기
+        // 현재 재생 중이어야 할 스케줄 중 "먼저 시작된 것" 선택.
+        // 영상이 진행 중인 기간에 다른 스케줄이 겹쳐 있어도 먼저 시작된 쪽이 우선 — 나머지는 무시.
         (DateTime startTime, string videoPath)? best = null;
         foreach (var c in candidates)
         {
@@ -223,7 +224,7 @@ public sealed class SchedulerService : IDisposable
             if (elapsed.TotalMilliseconds < 0) continue; // 아직 시작 안 됨
             if (elapsed.TotalMilliseconds >= videoDurationMs) continue; // 이미 끝남
 
-            if (best is null || c.startTime > best.Value.startTime)
+            if (best is null || c.startTime < best.Value.startTime)
                 best = c;
         }
 
