@@ -46,8 +46,6 @@ public partial class App : Application
         _trayManager.RefreshRequested += OnRefreshRequested;
         _trayManager.ForceStopRequested += OnForceStopRequested;
         _trayManager.Initialize();
-
-        _trayManager.OpenSettings();
     }
 
     private bool _playbackSuppressed;
