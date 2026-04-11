@@ -444,8 +444,8 @@
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="56"/>
-                                            <ColumnDefinition Width="72"/>
-                                            <ColumnDefinition Width="68"/>
+                                            <ColumnDefinition Width="64"/>
+                                            <ColumnDefinition Width="92"/>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="28"/>
                                         </Grid.ColumnDefinitions>
@@ -483,8 +483,8 @@
                                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="112"/>
-                                            <ColumnDefinition Width="68"/>
+                                            <ColumnDefinition Width="108"/>
+                                            <ColumnDefinition Width="92"/>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="28"/>
                                         </Grid.ColumnDefinitions>
@@ -546,6 +546,10 @@
                                            Margin="0,6" Width="56" TextAlignment="Center"/>
                                 <RepeatButton Content="▼" Click="OnHourDown" FontSize="16" Padding="14,4" Foreground="{DynamicResource FgBrush}"
                                               Background="Transparent" BorderThickness="0" Cursor="Hand"/>
+                                <TextBlock x:Name="LblPickerHour" Text="시" FontSize="13"
+                                           Foreground="{DynamicResource FgDimBrush}" HorizontalAlignment="Center"
+                                           FontFamily="pack://application:,,,/Assets/#NanumSquare Neo Regular"
+                                           Margin="0,2,0,0"/>
                             </StackPanel>
                             <TextBlock Text=":" FontSize="32" FontWeight="Bold" Margin="8,30"
                                        Foreground="{DynamicResource FgDimBrush}"/>
@@ -558,6 +562,26 @@
                                            Margin="0,6" Width="56" TextAlignment="Center"/>
                                 <RepeatButton Content="▼" Click="OnMinDown" FontSize="16" Padding="14,4" Foreground="{DynamicResource FgBrush}"
                                               Background="Transparent" BorderThickness="0" Cursor="Hand"/>
+                                <TextBlock x:Name="LblPickerMin" Text="분" FontSize="13"
+                                           Foreground="{DynamicResource FgDimBrush}" HorizontalAlignment="Center"
+                                           FontFamily="pack://application:,,,/Assets/#NanumSquare Neo Regular"
+                                           Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <TextBlock Text=":" FontSize="32" FontWeight="Bold" Margin="8,30"
+                                       Foreground="{DynamicResource FgDimBrush}"/>
+                            <StackPanel>
+                                <RepeatButton Content="▲" Click="OnSecUp" FontSize="16" Padding="14,4" Foreground="{DynamicResource FgBrush}"
+                                              Background="Transparent" BorderThickness="0" Cursor="Hand"/>
+                                <TextBlock x:Name="TxtPickerSec" Text="00" FontSize="32" FontWeight="Bold"
+                                           Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center"
+                                           FontFamily="pack://application:,,,/Assets/#NanumSquare Neo Regular"
+                                           Margin="0,6" Width="56" TextAlignment="Center"/>
+                                <RepeatButton Content="▼" Click="OnSecDown" FontSize="16" Padding="14,4" Foreground="{DynamicResource FgBrush}"
+                                              Background="Transparent" BorderThickness="0" Cursor="Hand"/>
+                                <TextBlock x:Name="LblPickerSec" Text="초" FontSize="13"
+                                           Foreground="{DynamicResource FgDimBrush}" HorizontalAlignment="Center"
+                                           FontFamily="pack://application:,,,/Assets/#NanumSquare Neo Regular"
+                                           Margin="0,2,0,0"/>
                             </StackPanel>
                         </StackPanel>
                         <Button x:Name="BtnTimeOk" Content="확인" Click="OnTimeOk" Margin="0,10,0,0"

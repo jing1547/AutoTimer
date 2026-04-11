@@ -13,8 +13,8 @@ public sealed class SchedulerService : IDisposable
     private readonly HashSet<string> _triggeredKeys = [];
     private readonly HashSet<string> _preNotifiedKeys = [];
     private DateTime _lastCleanup = DateTime.MinValue;
-    private int _lastCheckedMinute = -1;
-    private int _lastPreCheckedMinute = -1;
+    private int _lastCheckedSecond = -1;
+    private int _lastPreCheckedSecond = -1;
 
     public event Action<string, string>? ScheduleTriggered;
 
@@ -62,18 +62,18 @@ public sealed class SchedulerService : IDisposable
                 _lastCleanup = now;
             }
 
-            // 분이 바뀔 때 체크 (NTP 기준 분 변경 감지 — Second==0 놓침 방지)
-            var currentMinute = now.Hour * 60 + now.Minute;
+            // 초가 바뀔 때마다 체크 — HH:MM:SS 단위 스케줄 지원
+            var currentSecond = (now.Hour * 60 + now.Minute) * 60 + now.Second;
 
-            if (currentMinute != _lastPreCheckedMinute)
+            if (currentSecond != _lastPreCheckedSecond)
             {
-                _lastPreCheckedMinute = currentMinute;
+                _lastPreCheckedSecond = currentSecond;
                 CheckPreNotification(settings, now);
             }
 
-            if (currentMinute != _lastCheckedMinute)
+            if (currentSecond != _lastCheckedSecond)
             {
-                _lastCheckedMinute = currentMinute;
+                _lastCheckedSecond = currentSecond;
                 CheckTrigger(settings, now);
             }
         }
@@ -87,29 +87,37 @@ public sealed class SchedulerService : IDisposable
     {
         if (PreNotification is null) return;
 
-        // 1분 후 시각과 매칭되는 스케줄 찾기
-        var target = now.AddMinutes(1);
-        var targetTime = target.ToString("HH:mm");
-        var targetDate = target.ToString("yyyy-MM-dd");
-        var targetDay = target.DayOfWeek;
-
-        // 스케줄 시각을 정확히 계산
-        if (!TryParseTime(targetTime, out var h, out var m)) return;
-        var scheduleTime = now.Date.AddHours(h).AddMinutes(m);
-
+        // 주간 스케줄: 1분 전 알림
         foreach (var s in settings.Schedules.Where(s => s.Enabled))
         {
-            if (s.DayOfWeek != targetDay || s.Time != targetTime) continue;
-            var key = $"pre:{s.Id}:{targetDate} {targetTime}";
+            if (!TryParseTime(s.Time, out var h, out var m, out var sec)) continue;
+
+            // 이번 주의 해당 요일 스케줄 시각 계산 (오늘 기준)
+            var scheduleTime = now.Date.AddHours(h).AddMinutes(m).AddSeconds(sec);
+            // DayOfWeek가 오늘이 아니면 스킵 (1분 전 시점도 오늘이어야 함)
+            if (scheduleTime.DayOfWeek != s.DayOfWeek) continue;
+
+            var preWindowStart = scheduleTime.AddMinutes(-1);
+            // 현재 시각이 [scheduleTime-1분, scheduleTime) 구간에 진입했을 때 알림
+            if (now < preWindowStart || now >= scheduleTime) continue;
+
+            var key = $"pre:{s.Id}:{scheduleTime:yyyy-MM-dd HH:mm:ss}";
             if (!_preNotifiedKeys.Add(key)) continue;
             PreNotification.Invoke(ResolveVideoPath(s.VideoPath, settings), s.Label, scheduleTime);
             return;
         }
 
+        // 일회성 스케줄: 1분 전 알림
         foreach (var s in settings.OneTimeSchedules)
         {
-            if (s.Date != targetDate || s.Time != targetTime) continue;
-            var key = $"pre:{s.Id}:{targetDate} {targetTime}";
+            if (!DateTime.TryParse(s.Date, out var date)) continue;
+            if (!TryParseTime(s.Time, out var h, out var m, out var sec)) continue;
+            var scheduleTime = date.Date.AddHours(h).AddMinutes(m).AddSeconds(sec);
+
+            var preWindowStart = scheduleTime.AddMinutes(-1);
+            if (now < preWindowStart || now >= scheduleTime) continue;
+
+            var key = $"pre:{s.Id}:{scheduleTime:yyyy-MM-dd HH:mm:ss}";
             if (!_preNotifiedKeys.Add(key)) continue;
             PreNotification.Invoke(ResolveVideoPath(s.VideoPath, settings), s.Label, scheduleTime);
             return;
@@ -118,15 +126,15 @@ public sealed class SchedulerService : IDisposable
 
     private void CheckTrigger(AppSettings settings, DateTime now)
     {
-        var currentTime = now.ToString("HH:mm");
+        var currentTime = now.ToString("HH:mm:ss");
         var currentDate = now.ToString("yyyy-MM-dd");
         var currentDay = now.DayOfWeek;
 
         // 주간 스케줄
         foreach (var s in settings.Schedules.Where(s => s.Enabled))
         {
-            if (s.DayOfWeek != currentDay || s.Time != currentTime)
-                continue;
+            if (s.DayOfWeek != currentDay) continue;
+            if (NormalizeTime(s.Time) != currentTime) continue;
 
             var key = $"{s.Id}:{currentDate} {currentTime}";
             if (!_triggeredKeys.Add(key))
@@ -141,8 +149,8 @@ public sealed class SchedulerService : IDisposable
         var needSave = false;
         foreach (var s in settings.OneTimeSchedules.ToList())
         {
-            if (s.Date != currentDate || s.Time != currentTime)
-                continue;
+            if (s.Date != currentDate) continue;
+            if (NormalizeTime(s.Time) != currentTime) continue;
 
             var key = $"{s.Id}:{currentDate} {currentTime}";
             if (!_triggeredKeys.Add(key))
@@ -159,6 +167,13 @@ public sealed class SchedulerService : IDisposable
         }
         if (needSave)
             SettingsManager.Save();
+    }
+
+    /// <summary>"HH:mm" 또는 "HH:mm:ss"를 "HH:mm:ss"로 정규화</summary>
+    private static string NormalizeTime(string time)
+    {
+        if (!TryParseTime(time, out var h, out var m, out var s)) return "00:00:00";
+        return $"{h:D2}:{m:D2}:{s:D2}";
     }
 
     private static string ResolveVideoPath(string? scheduleVideoPath, AppSettings settings)
@@ -185,18 +200,18 @@ public sealed class SchedulerService : IDisposable
         foreach (var s in settings.Schedules.Where(s => s.Enabled))
         {
             if (s.DayOfWeek != currentDay) continue;
-            if (!TryParseTime(s.Time, out var h, out var m)) continue;
+            if (!TryParseTime(s.Time, out var h, out var m, out var sec)) continue;
 
-            var startTime = now.Date.AddHours(h).AddMinutes(m);
+            var startTime = now.Date.AddHours(h).AddMinutes(m).AddSeconds(sec);
             candidates.Add((startTime, ResolveVideoPath(s.VideoPath, settings)));
         }
 
         foreach (var s in settings.OneTimeSchedules)
         {
             if (s.Date != currentDate) continue;
-            if (!TryParseTime(s.Time, out var h, out var m)) continue;
+            if (!TryParseTime(s.Time, out var h, out var m, out var sec)) continue;
 
-            var startTime = now.Date.AddHours(h).AddMinutes(m);
+            var startTime = now.Date.AddHours(h).AddMinutes(m).AddSeconds(sec);
             candidates.Add((startTime, ResolveVideoPath(s.VideoPath, settings)));
         }
 
@@ -216,12 +231,17 @@ public sealed class SchedulerService : IDisposable
         return (best.Value.videoPath, now - best.Value.startTime);
     }
 
-    private static bool TryParseTime(string time, out int hour, out int minute)
+    private static bool TryParseTime(string time, out int hour, out int minute, out int second)
     {
-        hour = 0; minute = 0;
+        hour = 0; minute = 0; second = 0;
+        if (string.IsNullOrWhiteSpace(time)) return false;
         var parts = time.Split(':');
         if (parts.Length < 2) return false;
-        return int.TryParse(parts[0], out hour) && int.TryParse(parts[1], out minute);
+        if (!int.TryParse(parts[0], out hour)) return false;
+        if (!int.TryParse(parts[1], out minute)) return false;
+        if (parts.Length >= 3)
+            int.TryParse(parts[2], out second);
+        return true;
     }
 
     public void Dispose()

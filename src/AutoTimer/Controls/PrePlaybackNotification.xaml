@@ -36,7 +36,10 @@
             <!-- 버튼 -->
             <StackPanel Grid.Row="2" Orientation="Horizontal"
                         HorizontalAlignment="Center" Margin="16,4,16,16">
-                <Button x:Name="BtnCancel" MinWidth="80" Padding="16,7"
+                <Button x:Name="BtnOk" MinWidth="80" Padding="16,7"
+                        Cursor="Hand" FontSize="14" Click="BtnOk_Click"
+                        FontFamily="pack://application:,,,/Assets/#NanumSquare Neo Regular"/>
+                <Button x:Name="BtnCancel" MinWidth="80" Padding="16,7" Margin="8,0,0,0"
                         Cursor="Hand" FontSize="14" Click="BtnCancel_Click"
                         FontFamily="pack://application:,,,/Assets/#NanumSquare Neo Regular"/>
             </StackPanel>

@@ -52,7 +52,7 @@ public sealed class WeeklySchedule
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public bool Enabled { get; set; } = true;
     public DayOfWeek DayOfWeek { get; set; }
-    public string Time { get; set; } = "00:00";
+    public string Time { get; set; } = "00:00:00";
     public string? VideoPath { get; set; }
     public string Label { get; set; } = "";
 }
@@ -61,7 +61,7 @@ public sealed class OneTimeSchedule
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string Date { get; set; } = "";
-    public string Time { get; set; } = "00:00";
+    public string Time { get; set; } = "00:00:00";
     public string? VideoPath { get; set; }
     public string Label { get; set; } = "";
     public bool AutoDelete { get; set; } = true;

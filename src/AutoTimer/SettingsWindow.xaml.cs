@@ -345,11 +345,11 @@ public partial class SettingsWindow : Window
             if (_timeSync.LastResult == SyncResult.NetworkError)
             {
                 var offline = _lang == "ko" ? "[오프라인]" : "[OFFLINE]";
-                TxtCurrentTime.Text = $"{now:yyyy-MM-dd  HH:mm:ss.ff}  {offline}";
+                TxtCurrentTime.Text = $"{now:yyyy-MM-dd  HH:mm:ss}  {offline}";
             }
             else
             {
-                TxtCurrentTime.Text = $"{now:yyyy-MM-dd  HH:mm:ss.ff}";
+                TxtCurrentTime.Text = $"{now:yyyy-MM-dd  HH:mm:ss}";
             }
 
             // 현재 NTP 서버 정보를 서버 버튼 툴팁에 표시
@@ -359,7 +359,7 @@ public partial class SettingsWindow : Window
         else
         {
             now = DateTime.Now;
-            TxtCurrentTime.Text = $"{now:yyyy-MM-dd  HH:mm:ss.ff}";
+            TxtCurrentTime.Text = $"{now:yyyy-MM-dd  HH:mm:ss}";
             RbServer.ToolTip = null;
         }
     }
@@ -607,7 +607,7 @@ public partial class SettingsWindow : Window
     // ===== 피커 오버레이 =====
     private Controls.TimePicker? _activeTimePicker;
     private Controls.DatePicker? _activeDatePicker;
-    private int _pickerHour, _pickerMin;
+    private int _pickerHour, _pickerMin, _pickerSec;
     private int _dateViewYear, _dateViewMonth;
     private int _dateSelYear, _dateSelMonth, _dateSelDay;
     private static readonly string[] KoDays = ["일", "월", "화", "수", "목", "금", "토"];
@@ -680,9 +680,10 @@ public partial class SettingsWindow : Window
     private void OnTimePickerRequested(Controls.TimePicker tp)
     {
         _activeTimePicker = tp;
-        var parts = (tp.Time ?? "00:00").Split(':');
+        var parts = (tp.Time ?? "00:00:00").Split(':');
         _pickerHour = parts.Length >= 1 && int.TryParse(parts[0], out var h) ? Math.Clamp(h, 0, 23) : 0;
         _pickerMin = parts.Length >= 2 && int.TryParse(parts[1], out var m) ? Math.Clamp(m, 0, 59) : 0;
+        _pickerSec = parts.Length >= 3 && int.TryParse(parts[2], out var s) ? Math.Clamp(s, 0, 59) : 0;
         UpdateTimePickerDisplay();
         TimePickerPanel.Visibility = Visibility.Visible;
         DatePickerPanel.Visibility = Visibility.Collapsed;
@@ -727,17 +728,20 @@ public partial class SettingsWindow : Window
     {
         TxtPickerHour.Text = $"{_pickerHour:D2}";
         TxtPickerMin.Text = $"{_pickerMin:D2}";
+        TxtPickerSec.Text = $"{_pickerSec:D2}";
     }
 
     private void OnHourUp(object sender, RoutedEventArgs e) { _pickerHour = (_pickerHour + 1) % 24; UpdateTimePickerDisplay(); }
     private void OnHourDown(object sender, RoutedEventArgs e) { _pickerHour = (_pickerHour + 23) % 24; UpdateTimePickerDisplay(); }
     private void OnMinUp(object sender, RoutedEventArgs e) { _pickerMin = (_pickerMin + 1) % 60; UpdateTimePickerDisplay(); }
     private void OnMinDown(object sender, RoutedEventArgs e) { _pickerMin = (_pickerMin + 59) % 60; UpdateTimePickerDisplay(); }
+    private void OnSecUp(object sender, RoutedEventArgs e) { _pickerSec = (_pickerSec + 1) % 60; UpdateTimePickerDisplay(); }
+    private void OnSecDown(object sender, RoutedEventArgs e) { _pickerSec = (_pickerSec + 59) % 60; UpdateTimePickerDisplay(); }
 
     private void OnTimeOk(object sender, RoutedEventArgs e)
     {
         if (_activeTimePicker is not null)
-            _activeTimePicker.Time = $"{_pickerHour:D2}:{_pickerMin:D2}";
+            _activeTimePicker.Time = $"{_pickerHour:D2}:{_pickerMin:D2}:{_pickerSec:D2}";
         ClosePicker();
     }
 

@@ -29,10 +29,16 @@ public partial class PrePlaybackNotification : Window
         _label = label;
         _lang = Services.SettingsManager.Current.General.Language;
 
+        BtnOk.Content = _lang == "ko" ? "확인" : "OK";
+        BtnOk.Foreground = (Brush)FindResource("AccentBrush");
+        BtnOk.Background = (Brush)FindResource("BgHoverBrush");
+        BtnOk.BorderBrush = (Brush)FindResource("AccentDimBrush");
+        BtnOk.BorderThickness = new Thickness(1);
+
         BtnCancel.Content = _lang == "ko" ? "재생 취소" : "Cancel";
-        BtnCancel.Foreground = (Brush)FindResource("AccentBrush");
+        BtnCancel.Foreground = (Brush)FindResource("FgBrush");
         BtnCancel.Background = (Brush)FindResource("BgHoverBrush");
-        BtnCancel.BorderBrush = (Brush)FindResource("AccentDimBrush");
+        BtnCancel.BorderBrush = (Brush)FindResource("BorderBrush");
         BtnCancel.BorderThickness = new Thickness(1);
 
         UpdateMessage();
@@ -80,11 +86,33 @@ public partial class PrePlaybackNotification : Window
             : $"{labelPart}Playback in {remaining}s\nTime: {now:HH:mm:ss}";
     }
 
+    private void BtnOk_Click(object sender, RoutedEventArgs e)
+    {
+        // 즉시 재생 — 카운트다운 기다리지 않고 창 닫으며 재생 트리거
+        _timer.Stop();
+        Cancelled = false;
+        Close();
+    }
+
     private void BtnCancel_Click(object sender, RoutedEventArgs e)
     {
+        // 재확인 다이얼로그 — 이 창은 닫지 않고 유지
         _timer.Stop();
-        Cancelled = true;
-        Close();
+        var msg = _lang == "ko"
+            ? "정말 재생을 취소하시겠습니까?"
+            : "Are you sure you want to cancel playback?";
+        var title = _lang == "ko" ? "재생 취소 확인" : "Cancel playback";
+        bool confirmed = CustomDialog.ShowYesNo(msg, title, this);
+        if (confirmed)
+        {
+            Cancelled = true;
+            Close();
+        }
+        else
+        {
+            // 재확인에서 '아니오' — 카운트다운 재개
+            _timer.Start();
+        }
     }
 
     private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

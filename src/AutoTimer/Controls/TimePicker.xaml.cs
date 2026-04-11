@@ -9,7 +9,7 @@ public partial class TimePicker : UserControl
 {
     public static readonly DependencyProperty TimeProperty =
         DependencyProperty.Register("Time", typeof(string), typeof(TimePicker),
-            new FrameworkPropertyMetadata("00:00", FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnTimeChanged));
+            new FrameworkPropertyMetadata("00:00:00", FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnTimeChanged));
 
     public string Time
     {
@@ -33,7 +33,12 @@ public partial class TimePicker : UserControl
 
     private void UpdateDisplay()
     {
-        TxtDisplay.Text = Time ?? "00:00";
+        // 저장된 값이 "HH:mm"이면 "HH:mm:00"으로 정규화해서 표시
+        var v = Time;
+        if (string.IsNullOrWhiteSpace(v)) { TxtDisplay.Text = "00:00:00"; return; }
+        var parts = v.Split(':');
+        if (parts.Length == 2) v = v + ":00";
+        TxtDisplay.Text = v;
     }
 
     private void OnDisplayClick(object sender, MouseButtonEventArgs e)
