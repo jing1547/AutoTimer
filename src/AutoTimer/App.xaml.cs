@@ -132,66 +132,16 @@ public partial class App : Application
         if (screen.DeviceName == "NONE" || isFallback)
             return;
 
-        // 재생 창 생성 전에 AutoTimer 프로세스를 foreground로 끌어올림.
-        // 설정창이 보이지만 비활성 상태면 다른 프로세스(예: JW 라이브러리)가 foreground를 잡고 있을 수 있고,
-        // 그 상태에서는 새 VideoWindow가 Z-order 경쟁에서 밀려 Topmost 창들 뒤에 배치됨.
-        // 보이는 AutoTimer 창이 있으면 잠깐 activate해서 프로세스를 foreground로 올려놓음.
-        PreWindowActivation.EnsureProcessForeground();
+        // JW Library(UWP 전체화면)는 Win+D/SendInput을 무시하므로 공식 UWP API인
+        // AppDiagnosticInfo.StartSuspendAsync로 직접 서스펜드시킨다.
+        // 비동기이지만 await 안 해도 OS 레벨 효과는 즉시 시작됨 — VideoWindow 생성과 병렬 진행.
+        _ = UwpSuspender.SuspendJwLibraryAsync();
 
         var window = new VideoWindow(screen, isTestPlay: false);
         window.Closed += (_, _) => { if (_activeVideo == window) _activeVideo = null; };
         _activeVideo = window;
         window.Show();
         window.Play(videoPath);
-    }
-
-    private static class PreWindowActivation
-    {
-        public static void EnsureProcessForeground()
-        {
-            try
-            {
-                // 현재 AutoTimer가 소유한 보이는 창 중 하나를 찾아 잠깐 activate
-                foreach (Window w in Current.Windows)
-                {
-                    if (w.IsVisible && w.WindowState != WindowState.Minimized)
-                    {
-                        var hwnd = new System.Windows.Interop.WindowInteropHelper(w).Handle;
-                        if (hwnd == nint.Zero) continue;
-
-                        // 프로세스가 이미 foreground면 추가 작업 불필요
-                        var fg = Services.NativeMethods.GetForegroundWindow();
-                        if (fg != nint.Zero)
-                        {
-                            Services.NativeMethods.GetWindowThreadProcessId(fg, out uint fgPid);
-                            uint myPid = (uint)System.Environment.ProcessId;
-                            if (fgPid == myPid) return;
-                        }
-
-                        // AttachThreadInput 우회로 우리 창을 foreground로 끌어옴
-                        var fgThread = fg != nint.Zero
-                            ? Services.NativeMethods.GetWindowThreadProcessId(fg, out _)
-                            : 0;
-                        var myThread = Services.NativeMethods.GetCurrentThreadId();
-                        bool attached = false;
-                        if (fgThread != 0 && fgThread != myThread)
-                            attached = Services.NativeMethods.AttachThreadInput(myThread, fgThread, true);
-                        try
-                        {
-                            Services.NativeMethods.BringWindowToTop(hwnd);
-                            Services.NativeMethods.SetForegroundWindow(hwnd);
-                        }
-                        finally
-                        {
-                            if (attached)
-                                Services.NativeMethods.AttachThreadInput(myThread, fgThread, false);
-                        }
-                        return;
-                    }
-                }
-            }
-            catch { }
-        }
     }
 
     private void OnTestPlayRequested()
