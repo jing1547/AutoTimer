@@ -5,6 +5,8 @@
     <!-- 10.0.17763.0 이상을 명시해야 Windows.System.AppDiagnosticInfo 같은 WinRT API 사용 가능 -->
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <!-- PublishSingleFile을 위해 필요 (WindowsAppSDK 리소스 빌드 요구) -->
+    <EnableMsixTooling>true</EnableMsixTooling>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
     <AssemblyName>AutoTimer</AssemblyName>
