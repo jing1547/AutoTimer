@@ -453,6 +453,16 @@ public partial class SettingsWindow : Window
         }
     }
 
+    /// <summary>
+    /// 스케줄러의 자동 삭제가 발생했을 때 UI 컬렉션에서도 동일 항목을 제거한다.
+    /// 사용자가 편집 중인 다른 변경은 건드리지 않는다.
+    /// </summary>
+    public void RemoveOneTimeScheduleById(string id)
+    {
+        var item = OneTimeItems.FirstOrDefault(x => x.Id == id);
+        if (item is not null) OneTimeItems.Remove(item);
+    }
+
     private void OnTestPlay(object sender, RoutedEventArgs e) => TestPlayRequested?.Invoke();
     private void OnRefresh(object sender, RoutedEventArgs e) => RefreshRequested?.Invoke();
     private void OnForceStop(object sender, RoutedEventArgs e) => ForceStopRequested?.Invoke();

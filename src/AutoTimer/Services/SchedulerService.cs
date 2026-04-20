@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using AutoTimer.Models;
@@ -20,6 +21,9 @@ public sealed class SchedulerService : IDisposable
 
     /// <summary>스케줄 1분 전 사전 알림 (videoPath, label, 스케줄시각)</summary>
     public event Action<string, string, DateTime>? PreNotification;
+
+    /// <summary>일회성 스케줄이 자동 삭제 대상임을 알림 (id). 핸들러가 UI 컬렉션/설정 양쪽을 동기화 책임.</summary>
+    public event Action<string>? OneTimeScheduleAutoDelete;
 
     public SchedulerService(TimeSyncService timeSync)
     {
@@ -146,27 +150,53 @@ public sealed class SchedulerService : IDisposable
         }
 
         // 일회성 스케줄
-        var needSave = false;
         foreach (var s in settings.OneTimeSchedules.ToList())
         {
+            Diag($"onetime check id={s.Id} date={s.Date} time={s.Time} (curDate={currentDate} curTime={currentTime})");
             if (s.Date != currentDate) continue;
             if (NormalizeTime(s.Time) != currentTime) continue;
 
             var key = $"{s.Id}:{currentDate} {currentTime}";
             if (!_triggeredKeys.Add(key))
+            {
+                Diag($"onetime key already triggered: {key}");
                 continue;
+            }
 
             var videoPath = ResolveVideoPath(s.VideoPath, settings);
-            ScheduleTriggered?.Invoke(videoPath, s.Label);
 
+            // AutoDelete 먼저 처리 — ScheduleTriggered가 App.StartPlayback에서 HasUnsavedSettings를 체크할 때
+            // UI 컬렉션과 설정 상태가 이미 동기화돼있어야 false positive가 안 생긴다.
             if (s.AutoDelete)
             {
-                settings.OneTimeSchedules.Remove(s);
-                needSave = true;
+                if (OneTimeScheduleAutoDelete is not null)
+                {
+                    OneTimeScheduleAutoDelete.Invoke(s.Id);
+                }
+                else
+                {
+                    settings.OneTimeSchedules.Remove(s);
+                    SettingsManager.Save();
+                }
             }
+
+            Diag($"onetime FIRING ScheduleTriggered videoPath={videoPath} autoDelete={s.AutoDelete}");
+            ScheduleTriggered?.Invoke(videoPath, s.Label);
         }
-        if (needSave)
-            SettingsManager.Save();
+    }
+
+    private static void Diag(string msg)
+    {
+        try
+        {
+            var dir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "AutoTimer");
+            Directory.CreateDirectory(dir);
+            File.AppendAllText(Path.Combine(dir, "scheduler.log"),
+                $"{DateTime.Now:HH:mm:ss.fff} {msg}\n");
+        }
+        catch { }
     }
 
     /// <summary>"HH:mm" 또는 "HH:mm:ss"를 "HH:mm:ss"로 정규화</summary>

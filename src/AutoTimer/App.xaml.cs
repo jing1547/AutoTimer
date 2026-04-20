@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
 using AutoTimer.Services;
@@ -39,6 +40,7 @@ public partial class App : Application
         _scheduler = new SchedulerService(_timeSync);
         _scheduler.ScheduleTriggered += OnScheduleTriggered;
         _scheduler.PreNotification += OnPreNotification;
+        _scheduler.OneTimeScheduleAutoDelete += OnOneTimeScheduleAutoDelete;
         _scheduler.Start();
 
         _trayManager = new TrayIconManager(_timeSync);
@@ -84,21 +86,52 @@ public partial class App : Application
         });
     }
 
-    private void OnScheduleTriggered(string videoPath, string label)
+    /// <summary>
+    /// 스케줄러가 일회성 스케줄 자동삭제를 요청. 설정창이 열려있으면 UI 컬렉션도 제거해
+    /// HasUnsavedSettings가 false positive를 내지 않게 한다. 어느 경우든 설정 저장.
+    /// </summary>
+    private void OnOneTimeScheduleAutoDelete(string id)
     {
         if (Dispatcher.HasShutdownStarted) return;
 
         Dispatcher.BeginInvoke(() =>
         {
+            var ui = _trayManager?.ActiveSettingsWindow;
+            if (ui is not null)
+            {
+                ui.RemoveOneTimeScheduleById(id);
+            }
+
+            var list = SettingsManager.Current.OneTimeSchedules;
+            var match = list.FirstOrDefault(s => s.Id == id);
+            if (match is not null)
+                list.Remove(match);
+
+            SettingsManager.Save();
+        });
+    }
+
+    private void OnScheduleTriggered(string videoPath, string label)
+    {
+        if (Dispatcher.HasShutdownStarted) { DbgLog("OnScheduleTriggered shutdown"); return; }
+        DbgLog($"OnScheduleTriggered enqueue videoPath={videoPath}");
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            DbgLog($"OnScheduleTriggered run suppressed={_playbackSuppressed} activeVideo={_activeVideo is not null} activeNotif={_activeNotification is not null}");
             if (_playbackSuppressed)
             {
                 _playbackSuppressed = false;
+                DbgLog("OnScheduleTriggered return: suppressed");
                 return;
             }
 
             // 팝업에서 이미 재생 시작했으면 스킵
             if (_activeVideo is not null && !_activeVideo.IsTestPlay)
+            {
+                DbgLog("OnScheduleTriggered return: activeVideo not test");
                 return;
+            }
 
             // 팝업이 아직 떠있으면 닫기
             if (_activeNotification is not null)
@@ -111,13 +144,28 @@ public partial class App : Application
         });
     }
 
+    private static void DbgLog(string msg)
+    {
+        try
+        {
+            var dir = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "AutoTimer");
+            System.IO.Directory.CreateDirectory(dir);
+            System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "app.log"),
+                $"{DateTime.Now:HH:mm:ss.fff} {msg}\n");
+        }
+        catch { }
+    }
+
     private void StartPlayback(string videoPath)
     {
+        DbgLog($"StartPlayback enter videoPath={videoPath}");
         if (_trayManager?.HasUnsavedSettings == true)
-            return;
+        { DbgLog("StartPlayback return: HasUnsavedSettings"); return; }
 
         if (string.IsNullOrWhiteSpace(videoPath) || !System.IO.File.Exists(videoPath))
-            return;
+        { DbgLog($"StartPlayback return: invalid path exists={System.IO.File.Exists(videoPath)}"); return; }
 
         if (_activeVideo is not null && _activeVideo.IsTestPlay)
         {
@@ -126,11 +174,12 @@ public partial class App : Application
         }
 
         if (_activeVideo is not null)
-            return;
+        { DbgLog("StartPlayback return: activeVideo exists"); return; }
 
         var (screen, isFallback) = MonitorService.GetTargetScreenSafe();
         if (screen.DeviceName == "NONE" || isFallback)
-            return;
+        { DbgLog($"StartPlayback return: monitor fallback device={screen.DeviceName} fb={isFallback}"); return; }
+        DbgLog("StartPlayback creating VideoWindow");
 
         // JW Library(UWP 전체화면)는 Win+D/SendInput을 무시하므로 공식 UWP API인
         // AppDiagnosticInfo.StartSuspendAsync로 직접 서스펜드시킨다.

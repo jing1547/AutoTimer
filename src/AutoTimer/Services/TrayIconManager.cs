@@ -22,6 +22,10 @@ public sealed class TrayIconManager : IDisposable
     /// <summary>설정창이 열려 있고 미저장 변경이 있는지</summary>
     public bool HasUnsavedSettings => _settingsWindow is not null && _settingsWindow.IsVisible && _settingsWindow.IsDirty;
 
+    /// <summary>현재 열려있는 설정창(없으면 null). 외부에서 UI 컬렉션을 동기화할 때 사용.</summary>
+    public SettingsWindow? ActiveSettingsWindow =>
+        _settingsWindow is not null && _settingsWindow.IsVisible ? _settingsWindow : null;
+
     public TrayIconManager(TimeSyncService timeSync)
     {
         _timeSync = timeSync;
