@@ -877,6 +877,11 @@ public partial class SettingsWindow : Window
     {
         Width = 540;
         Height = 780;
+
+        // 영상 재생 모니터가 아닌 보조 모니터 중앙에 배치
+        var screen = Services.MonitorService.GetAuxiliaryScreen();
+        Left = screen.Left + (screen.Width - Width) / 2;
+        Top = screen.Top + (screen.Height - Height) / 2;
     }
 
     protected override void OnClosed(EventArgs e)

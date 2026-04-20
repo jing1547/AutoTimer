@@ -4,7 +4,7 @@
         xmlns:ctrl="clr-namespace:AutoTimer.Controls"
         Title="AutoTimer Settings"
         MinWidth="480" MinHeight="500"
-        WindowStartupLocation="CenterScreen"
+        WindowStartupLocation="Manual"
         ResizeMode="CanResize"
         WindowStyle="None"
         AllowsTransparency="True"

@@ -49,6 +49,11 @@ public partial class PrePlaybackNotification : Window
 
         Loaded += (_, _) =>
         {
+            // 영상 재생 모니터가 아닌 보조 모니터 중앙에 배치
+            var screen = Services.MonitorService.GetAuxiliaryScreen();
+            Left = screen.Left + (screen.Width - Width) / 2;
+            Top = screen.Top + (screen.Height - Height) / 2;
+
             Activate();
             _timer.Start();
         };

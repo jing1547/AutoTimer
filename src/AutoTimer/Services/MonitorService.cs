@@ -94,6 +94,28 @@ public static class MonitorService
         return GetTargetScreenSafe().screen;
     }
 
+    /// <summary>
+    /// 영상 재생용이 아닌 "보조 모니터"를 반환한다.
+    /// UI 창(설정창, 1분전 알림 팝업)이 영상 재생 모니터를 가리지 않도록 자동 선택.
+    /// 우선순위: (1) 영상용이 아닌 주 모니터 → (2) 영상용이 아닌 첫 모니터 → (3) 영상용 모니터(1개뿐인 경우).
+    /// </summary>
+    public static ScreenInfo GetAuxiliaryScreen()
+    {
+        var screens = GetScreens();
+        if (screens.Count == 0)
+            return new ScreenInfo { DeviceName = "NONE", Width = 1920, Height = 1080, IsPrimary = true };
+
+        var (videoScreen, _) = GetTargetScreenSafe();
+        var videoName = videoScreen.DeviceName;
+
+        var nonVideo = screens.Where(s => s.DeviceName != videoName).ToList();
+        if (nonVideo.Count == 0)
+            return videoScreen; // 모니터가 1개뿐 — 선택지 없음
+
+        var primary = nonVideo.FirstOrDefault(s => s.IsPrimary);
+        return primary ?? nonVideo[0];
+    }
+
     /// <summary>설정된 모니터가 현재 연결되어 있는지 확인</summary>
     public static bool IsTargetMonitorAvailable()
     {
